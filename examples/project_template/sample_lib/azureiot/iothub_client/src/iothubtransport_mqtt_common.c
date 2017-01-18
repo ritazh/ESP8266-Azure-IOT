@@ -32,7 +32,7 @@
 
 #include <limits.h>
 
-#define SAS_TOKEN_DEFAULT_LIFETIME  3600
+#define SAS_TOKEN_DEFAULT_LIFETIME  36000
 #define SAS_REFRESH_MULTIPLIER      .8
 #define EPOCH_TIME_T_VALUE          0
 #define DEFAULT_MQTT_KEEPALIVE      4*60 // 4 min
