@@ -1486,7 +1486,7 @@
  * SO_REUSE==1: Enable SO_REUSEADDR option.
  */
 #ifndef SO_REUSE
-#define SO_REUSE                        0
+#define SO_REUSE                        1
 #endif
 
 /**
@@ -1495,7 +1495,7 @@
  * WARNING: Adds a memcpy for every packet if passing to more than one pcb!
  */
 #ifndef SO_REUSE_RXTOALL
-#define SO_REUSE_RXTOALL                0
+#define SO_REUSE_RXTOALL                1
 #endif
 
 /**

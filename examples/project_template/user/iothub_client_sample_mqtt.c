@@ -25,7 +25,7 @@ static int callbackCounter;
 static char msgText[1024];
 static char propText[1024];
 static bool g_continueRunning;
-#define MESSAGE_COUNT 50
+#define MESSAGE_COUNT 500
 #define DOWORK_LOOP_NUM     3
 
 
