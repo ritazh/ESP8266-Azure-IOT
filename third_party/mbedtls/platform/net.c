@@ -49,13 +49,7 @@
 
 static void net_str_to_hex(char *buffer, int net_len)
 {
-	uint32 i = 0;
-	for (i = 0; i < net_len; i ++){
-		os_printf("%2x ", buffer[i]);
-		if ((i + 1)%16==0)
-			os_printf("\n");
-	}
-	os_printf("\n");
+    
 }
 
 /*
@@ -418,13 +412,13 @@ int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
     if( fd < 0 )
         return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
 
-	os_printf("expected read len %d\n", len);
+	//os_printf("expected read len %d\n", len);
     ret = (int) read( fd, buf, len );
 	net_str_to_hex(buf, len);
 
     if( ret < 0 )
     {
-        os_printf("net_would_block ctx %d\n", net_would_block( ctx ));
+        //os_printf("net_would_block ctx %d\n", net_would_block( ctx ));
         if( net_would_block( ctx ) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_READ );
 
@@ -506,7 +500,7 @@ int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
     }
 
     ret = (int) write( fd, buf, len );
-	os_printf("expected write len %d\n", ret);	
+	//os_printf("expected write len %d\n", ret);	
 
 	if( ret < 0 )
     {
