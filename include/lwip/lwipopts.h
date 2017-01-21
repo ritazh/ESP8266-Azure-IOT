@@ -390,7 +390,7 @@
 /**
  * SO_REUSE==1: Enable SO_REUSEADDR option.
  */
-#define SO_REUSE                        0
+#define SO_REUSE                        1
 
 /*
    ----------------------------------------
