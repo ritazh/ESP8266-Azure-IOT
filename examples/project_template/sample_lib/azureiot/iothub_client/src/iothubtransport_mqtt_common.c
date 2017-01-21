@@ -32,7 +32,7 @@
 
 #include <limits.h>
 
-#define SAS_TOKEN_DEFAULT_LIFETIME  36000
+#define SAS_TOKEN_DEFAULT_LIFETIME  3600
 #define SAS_REFRESH_MULTIPLIER      .8
 #define EPOCH_TIME_T_VALUE          0
 #define DEFAULT_MQTT_KEEPALIVE      4*60 // 4 min
@@ -782,6 +782,8 @@ static int InitializeConnection(PMQTTTRANSPORT_HANDLE_DATA transport_data)
             {
                 if ((current_time - transport_data->mqtt_connect_time) / 1000 > (SAS_TOKEN_DEFAULT_LIFETIME*SAS_REFRESH_MULTIPLIER))
                 {
+                    printf("sas token expired. \n");
+                    
                     (void)mqtt_client_disconnect(transport_data->mqttClient);
                     transport_data->isConnected = false;
                     transport_data->currPacketState = UNKNOWN_TYPE;
