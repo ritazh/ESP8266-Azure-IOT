@@ -35,6 +35,14 @@ typedef struct EVENT_INSTANCE_TAG
     size_t messageTrackingId;  // For tracking the messages within the user callback.
 } EVENT_INSTANCE;
 
+static unsigned char* bytearray_to_str(const unsigned char *buffer, size_t len)
+{
+    unsigned char* ret = (unsigned char*)malloc(len+1);
+    memcpy(ret, buffer, len);
+    ret[len] = '\0';
+    return ret; 
+}
+
 static IOTHUBMESSAGE_DISPOSITION_RESULT ReceiveMessageCallback(IOTHUB_MESSAGE_HANDLE message, void* userContextCallback)
 {
 
@@ -48,10 +56,10 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT ReceiveMessageCallback(IOTHUB_MESSAGE_HA
     }
     else
     {
-        //(void)printf("Received Message [%d] with Data: <<<%.*s>>> & Size=%d\r\n", *counter, buffer, (int)size);
-        //(void)printf("Received Message [%d] with Data: <<<%.*s>>> & Size=%d\r\n", *counter, (int)size, buffer, (int)size);
+        unsigned char* message_string = bytearray_to_str(buffer, size);
+        (void)printf("IoTHubMessage_GetByteArray received message: \"%s\" \n", message_string);
+        
         // If we receive the word 'quit' then we stop running
-        (void)printf("IoTHubMessage_GetByteArray buffer sample: \"%s\" \n", buffer);
         if (size == (strlen("quit") * sizeof(char)) && memcmp(buffer, "quit", size) == 0)
         {
             g_continueRunning = false;
