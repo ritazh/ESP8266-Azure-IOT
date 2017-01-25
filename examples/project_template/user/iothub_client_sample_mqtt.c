@@ -25,7 +25,7 @@ static int callbackCounter;
 static char msgText[1024];
 static char propText[1024];
 static bool g_continueRunning;
-#define MESSAGE_COUNT 500
+#define MESSAGE_COUNT 5
 #define DOWORK_LOOP_NUM     3
 
 
@@ -58,7 +58,8 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT ReceiveMessageCallback(IOTHUB_MESSAGE_HA
     {
         unsigned char* message_string = bytearray_to_str(buffer, size);
         (void)printf("IoTHubMessage_GetByteArray received message: \"%s\" \n", message_string);
-        
+        free(message_string);
+
         // If we receive the word 'quit' then we stop running
         if (size == (strlen("quit") * sizeof(char)) && memcmp(buffer, "quit", size) == 0)
         {
@@ -186,9 +187,7 @@ void iothub_client_sample_mqtt_run(void)
                         }
                         iterator++;
                     }
-
                     IoTHubClient_LL_DoWork(iotHubClientHandle);
-                    //(void)printf("rita: IoTHubClient_LL_DoWork finished!\r\n");
                     ThreadAPI_Sleep(1);
 
                     // if (callbackCounter>=MESSAGE_COUNT){

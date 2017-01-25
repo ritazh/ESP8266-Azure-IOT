@@ -34,16 +34,11 @@
 #include "iothub_client_sample_mqtt.h"
 #include "lwip/apps/sntp.h"
 #include "lwip/apps/sntp_time.h"
+#include "uart.h"
 
 #define OPENSSL_DEMO_THREAD_NAME "ssl_demo"
 #define OPENSSL_DEMO_THREAD_STACK_WORDS 1024*2
 #define OPENSSL_DEMO_THREAD_PRORIOTY 6
-
-#define OPENSSL_DEMO_FRAGMENT_SIZE 5120
-
-#define OPENSSL_DEMO_LOCAL_TCP_PORT 1000
-
-#define LogError printf
 
 static os_timer_t timer;
 
@@ -73,10 +68,10 @@ LOCAL void ICACHE_FLASH_ATTR wait_for_connection_ready(uint8 flag)
                       &openssl_handle);
 
     }else{
-    	os_timer_disarm(&timer);
-    	os_timer_setfn(&timer, (os_timer_func_t *)wait_for_connection_ready, NULL);
-    	os_timer_arm(&timer, 2000, 0);            
-	}
+        os_timer_disarm(&timer);
+        os_timer_setfn(&timer, (os_timer_func_t *)wait_for_connection_ready, NULL);
+        os_timer_arm(&timer, 2000, 0);            
+    }
 }
 
 LOCAL void ICACHE_FLASH_ATTR configWiFi()
@@ -107,9 +102,14 @@ LOCAL void ICACHE_FLASH_ATTR configWiFi()
 *******************************************************************************/
 void user_init(void)
 {
-	//mac host doesn't like 74880.  uart_init doesn't work, use uart_div_modify
-	uart_div_modify(0, UART_CLK_FREQ / 115200);
-    printf("SDK version:%s\n", system_get_sdk_version());
+    //mac host doesn't like 74880.  uart_init doesn't work, use uart_div_modify
+    uart_div_modify(0, UART_CLK_FREQ / 115200);
+    //If you need to use a different UART port:
+    // os_install_putc1((void *)uart1_write_char);
+    // uart_div_modify(1, UART_CLK_FREQ / 115200);
+
+    //printf("SDK version:%s\n", system_get_sdk_version());
+    //printf("user_init: %d\n", system_get_free_heap_size());
     //set system time
     //set_time();
     //lwip_connection_test();
@@ -123,7 +123,7 @@ return 0;
 
 int _getpid_r()
 {
-	return 0;
+    return 0;
 }
 
 void _kill_r()
