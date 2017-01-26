@@ -87,7 +87,7 @@ esptool.py --port /dev/cu.SLAB_USBtoUART  write_flash --flash_freq 40m --flash_m
 
 ## Test Your Setup
 
-To test that the sample application is streaming data to Azure IoT, download the [iothub-explorer](https://github.com/Azure/azure-iot-sdks/blob/master/doc/manage_iot_hub.md#iothub-explorer) on your computer. Use the device-specific connection string you got earlier from the [Setup Azure IoT section](https://github.com/ritazh/ESP8266-Azure-IOT#setup-azure-iot) to get messages received by Azure IoT. Run the following from terminal:
+To test that the sample application is streaming data to Azure IoT, download the [iothub-explorer](https://github.com/Azure/iothub-explorer) on your computer. Use the device-specific connection string you got earlier from the [Setup Azure IoT section](https://github.com/ritazh/ESP8266-Azure-IOT#setup-azure-iot) to get messages received by Azure IoT. Run the following from terminal:
 
 ```
 iothub-explorer '[azure connection string]' monitor-events [DeviceId]
@@ -105,7 +105,7 @@ To customize this sample solution for your own use, update `/examples/project_te
 
 ## What's in the Sample?
 
-In the [mqtt sample](https://github.com/ritazh/ESP8266-Azure-IOT/blob/master/examples/project_template/user/iothub_client_sample_mqtt.c), it sends 500 messages to Azure, then it will wait until cloud sends a “quit” message to end the program. Before the program ends, you can send any message to the device by using the [iothub-explorer](https://github.com/Azure/azure-iot-sdks/blob/master/doc/manage_iot_hub.md#iothub-explorer) like the following:
+In the [mqtt sample](https://github.com/ritazh/ESP8266-Azure-IOT/blob/master/examples/project_template/user/iothub_client_sample_mqtt.c), it sends 500 messages to Azure, then it will wait until cloud sends a “quit” message to end the program. Before the program ends, you can send any message to the device by using the [iothub-explorer](https://github.com/Azure/iothub-explorer) like the following:
 
 ```
 To send a message to a device named "RitaIoT":
