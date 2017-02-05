@@ -3,11 +3,11 @@
 
 The [ESP8266](https://en.wikipedia.org/wiki/ESP8266) is a low-cost Wi-Fi chip with full TCP/IP stack and MCU (Micro Controller Unit) capability produced by Espressif Systems. 
 
-The [ESP8266 RTOS SDK](https://github.com/espressif/ESP8266_RTOS_SDK) is based on FreeRTOS. This repo integrates ESP8266 RTOS SDK with the Azure IoT C SDK to stream data from ESP8266 to Azure IoT using MQTT protocol.
+The [ESP8266 RTOS SDK version 1.5 beta](https://github.com/espressif/ESP8266_RTOS_SDK) is based on FreeRTOS. This repo integrates ESP8266 RTOS SDK with the [Azure IoT C SDK version 2016-07-29](https://github.com/Azure/azure-iot-sdk-c) to stream data from ESP8266 to Azure IoT using MQTT protocol.
 
 ## Installation / Dependencies
 
-Get Build Environment
+Get Build Environment:
 - Follow this [guide](https://espressif.com/en/support/explore/get-started/esp8266/getting-started-guide)
 - Under section 3.3. ESP8266 Toolkit, download VirtualBox and the lubuntu image.
 - Make sure to share a local folder with the VM
