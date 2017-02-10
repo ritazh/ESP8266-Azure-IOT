@@ -25,7 +25,7 @@ static int callbackCounter;
 static char msgText[1024];
 static char propText[1024];
 static bool g_continueRunning;
-#define MESSAGE_COUNT 5
+#define MESSAGE_COUNT 500
 #define DOWORK_LOOP_NUM     3
 
 
@@ -36,12 +36,12 @@ typedef struct EVENT_INSTANCE_TAG
 } EVENT_INSTANCE;
 
 static unsigned char* bytearray_to_str(const unsigned char *buffer, size_t len)
-{
+ {
     unsigned char* ret = (unsigned char*)malloc(len+1);
     memcpy(ret, buffer, len);
     ret[len] = '\0';
     return ret; 
-}
+ }
 
 static IOTHUBMESSAGE_DISPOSITION_RESULT ReceiveMessageCallback(IOTHUB_MESSAGE_HANDLE message, void* userContextCallback)
 {
@@ -91,6 +91,32 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT ReceiveMessageCallback(IOTHUB_MESSAGE_HA
     /* Some device specific action code goes here... */
     (*counter)++;
     return IOTHUBMESSAGE_ACCEPTED;
+}
+
+static int DeviceMethodCallback(const char* method_name, const unsigned char* payload, size_t size, unsigned char** response, size_t* resp_size, void* userContextCallback)
+{
+    (void)userContextCallback;
+
+    printf("\r\nDevice Method called\r\n");
+    printf("Device Method name:    %s\r\n", method_name);
+    printf("Device Method payload: %.*s\r\n", (int)size, (const char*)payload);
+
+    int status = 200;
+    char* RESPONSE_STRING = "{ \"Response\": \"This is the response from the device\" }";
+    printf("\r\nResponse status: %d\r\n", status);
+    printf("Response payload: %s\r\n\r\n", RESPONSE_STRING);
+
+    *resp_size = strlen(RESPONSE_STRING);
+    if ((*response = malloc(*resp_size)) == NULL)
+    {
+        status = -1;
+    }
+    else
+    {
+        memcpy(*response, RESPONSE_STRING, *resp_size);
+    }
+    g_continueRunning = false;
+    return status;
 }
 
 static void SendConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void* userContextCallback)
@@ -145,6 +171,11 @@ void iothub_client_sample_mqtt_run(void)
 
             /* Setting Message call back, so we can receive Commands. */
             //(void)printf("size before IoTHubClient_LL_SetMessageCallback: %d \n", system_get_free_heap_size());
+            if (IoTHubClient_LL_SetDeviceMethodCallback(iotHubClientHandle, DeviceMethodCallback, &receiveContext) != IOTHUB_CLIENT_OK)
+            {
+                (void)printf("ERROR: IoTHubClient_LL_SetDeviceMethodCallback..........FAILED!\r\n");
+            }
+
             if (IoTHubClient_LL_SetMessageCallback(iotHubClientHandle, ReceiveMessageCallback, &receiveContext) != IOTHUB_CLIENT_OK)
             {
                 (void)printf("ERROR: IoTHubClient_LL_SetMessageCallback..........FAILED!\r\n");
@@ -155,6 +186,7 @@ void iothub_client_sample_mqtt_run(void)
 
                 /* Now that we are ready to receive commands, let's send some messages */
                 size_t iterator = 0;
+                int n = 0;
                 do
                 {
                     if (iterator < MESSAGE_COUNT && (iterator<= callbackCounter))
@@ -187,13 +219,18 @@ void iothub_client_sample_mqtt_run(void)
                         }
                         iterator++;
                     }
+
                     IoTHubClient_LL_DoWork(iotHubClientHandle);
+                    //(void)printf("rita: IoTHubClient_LL_DoWork finished!\r\n");
                     ThreadAPI_Sleep(1);
 
-                    // if (callbackCounter>=MESSAGE_COUNT){
-                    //     printf("done sending...\n");
-                    //     break;
-                    // }
+                    if (callbackCounter>=MESSAGE_COUNT){
+                        //n++;
+                        //printf("%dth round \n", n);
+                        // break;
+                        //callbackCounter = 0;
+                        //iterator = 0;
+                    }
                 } while (g_continueRunning);
 
                 (void)printf("iothub_client_sample_mqtt has gotten quit message, call DoWork %d more time to complete final sending...\r\n", DOWORK_LOOP_NUM);

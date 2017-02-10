@@ -31,6 +31,16 @@ extern "C"
 #define REFCOUNT_USE_STD_ATOMIC 1
 #endif
 
+#if defined(ARDUINO_ARCH_SAMD)
+#undef  REFCOUNT_USE_STD_ATOMIC
+#endif
+
+#if defined(FREERTOS_ARCH_ESP8266)
+#undef  REFCOUNT_USE_STD_ATOMIC  
+#define REFCOUNT_ATOMIC_DONTCARE 1
+#undef __GNUC__    
+#endif
+
 #define REFCOUNT_TYPE(type) \
 struct C2(C2(REFCOUNT_, type), _TAG)
 
