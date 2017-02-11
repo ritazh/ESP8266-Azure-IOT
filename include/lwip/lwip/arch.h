@@ -207,9 +207,6 @@ extern "C" {
 #ifndef errno
 extern int errno;
 #endif
-#else
-
-#include "sys/errno.h"
 
 #endif /* LWIP_PROVIDE_ERRNO */
 

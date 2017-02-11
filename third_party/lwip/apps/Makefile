@@ -12,10 +12,20 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-UP_EXTRACT_DIR = ..
+
 GEN_LIBS = liblwipapps.a
-COMPONENTS_liblwipapps = sntp/liblwipsntp.a	
+
 endif
+
+
+#############################################################
+# Configuration i.e. compile options etc.
+# Target specific stuff (defines etc.) goes in here!
+# Generally values applying to a tree are captured in the
+#   makefile at its root level - these are then overridden
+#   for a subtree within the makefile rooted therein
+#
+#DEFINES += 
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -30,7 +40,6 @@ endif
 #
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I $(SDK_PATH)/include/lwip/apps
 INCLUDES += -I ./
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

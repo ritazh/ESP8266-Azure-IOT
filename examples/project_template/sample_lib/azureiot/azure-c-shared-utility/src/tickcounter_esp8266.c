@@ -36,7 +36,7 @@ void tickcounter_destroy(TICK_COUNTER_HANDLE tick_counter)
     }
 }
 
-int tickcounter_get_current_ms(TICK_COUNTER_HANDLE tick_counter, uint64_t * current_ms)
+int tickcounter_get_current_ms(TICK_COUNTER_HANDLE tick_counter, tickcounter_ms_t * current_ms)
 {
     int result;
 
@@ -48,7 +48,7 @@ int tickcounter_get_current_ms(TICK_COUNTER_HANDLE tick_counter, uint64_t * curr
     else
     {
         //Currently configTICK_RATE_HZ is set to 100 (100Hz); a tick is 10ms
-        *current_ms = xTaskGetTickCount()*10;
+        *current_ms = (tickcounter_ms_t)xTaskGetTickCount()*10;
         result = 0;
     }
 

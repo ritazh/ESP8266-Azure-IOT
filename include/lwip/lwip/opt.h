@@ -875,6 +875,10 @@
 #define LWIP_UDP                        1
 #endif
 
+#ifndef LWIP_SO_LINGER
+#define LWIP_SO_LINGER                  1
+#endif
+
 /**
  * LWIP_UDPLITE==1: Turn on UDP-Lite. (Requires LWIP_UDP)
  */
@@ -1486,7 +1490,7 @@
  * SO_REUSE==1: Enable SO_REUSEADDR option.
  */
 #ifndef SO_REUSE
-#define SO_REUSE                        1
+#define SO_REUSE                        0
 #endif
 
 /**
@@ -1495,7 +1499,7 @@
  * WARNING: Adds a memcpy for every packet if passing to more than one pcb!
  */
 #ifndef SO_REUSE_RXTOALL
-#define SO_REUSE_RXTOALL                1
+#define SO_REUSE_RXTOALL                0
 #endif
 
 /**

@@ -47,11 +47,6 @@
 
 #include <stdint.h>
 
-static void net_str_to_hex(char *buffer, int net_len)
-{
-    
-}
-
 /*
  * Prepare for using the sockets interface
  */
@@ -71,16 +66,6 @@ static int net_prepare( void )
 #else
 #endif
     return( 0 );
-}
-
-static int mbedtls_net_errno(int fd)
-{
-    int sock_errno = 0;
-    u32_t optlen = sizeof(sock_errno);
-
-    getsockopt(fd, SOL_SOCKET, SO_ERROR, &sock_errno, &optlen);
-
-    return sock_errno;
 }
 
 /*
@@ -237,13 +222,11 @@ static int net_would_block( const mbedtls_net_context *ctx )
     /*
      * Never return 'WOULD BLOCK' on a non-blocking socket
      */
-    if ( ( fcntl( ctx->fd, F_GETFL, 0) & O_NONBLOCK ) != O_NONBLOCK ) {
-        return ( 0 );
-    }
+    if( ( fcntl( ctx->fd, F_GETFL, 0) & O_NONBLOCK ) != O_NONBLOCK )
+        return( 0 );
 
-    int error = mbedtls_net_errno(ctx->fd);
-
-    switch ( error ) {
+    switch( errno )
+    {
 #if defined EAGAIN
         case EAGAIN:
 #endif
@@ -407,31 +390,26 @@ int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
 {
     int ret;
     int fd = ((mbedtls_net_context *) ctx)->fd;
-    int error = 0;
 
     if( fd < 0 )
         return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
 
-	//os_printf("expected read len %d\n", len);
     ret = (int) read( fd, buf, len );
-	net_str_to_hex(buf, len);
 
     if( ret < 0 )
     {
-        //os_printf("net_would_block ctx %d\n", net_would_block( ctx ));
         if( net_would_block( ctx ) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_READ );
 
-		error = mbedtls_net_errno(fd);
 #if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
     !defined(EFI32)
         if( WSAGetLastError() == WSAECONNRESET )
             return( MBEDTLS_ERR_NET_CONN_RESET );
 #else
-        if( error == EPIPE || error == ECONNRESET )
+        if( errno == EPIPE || errno == ECONNRESET )
             return( MBEDTLS_ERR_NET_CONN_RESET );
 
-        if( error == EINTR )
+        if( errno == EINTR )
             return( MBEDTLS_ERR_SSL_WANT_READ );
 #endif
 
@@ -493,30 +471,25 @@ int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
     int ret;
     int fd = ((mbedtls_net_context *) ctx)->fd;
 
-    int error = 0;
-
-    if ( fd < 0 ) {
-        return ( MBEDTLS_ERR_NET_INVALID_CONTEXT );
-    }
+    if( fd < 0 )
+        return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
 
     ret = (int) write( fd, buf, len );
-	//os_printf("expected write len %d\n", ret);	
 
-	if( ret < 0 )
+    if( ret < 0 )
     {
         if( net_would_block( ctx ) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_WRITE );
-		
-		error = mbedtls_net_errno(fd);
+
 #if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
     !defined(EFI32)
         if( WSAGetLastError() == WSAECONNRESET )
             return( MBEDTLS_ERR_NET_CONN_RESET );
 #else
-        if( error == EPIPE || error == ECONNRESET )
+        if( errno == EPIPE || errno == ECONNRESET )
             return( MBEDTLS_ERR_NET_CONN_RESET );
 
-        if( error == EINTR )
+        if( errno == EINTR )
             return( MBEDTLS_ERR_SSL_WANT_WRITE );
 #endif
 

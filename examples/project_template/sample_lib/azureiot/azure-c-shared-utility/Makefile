@@ -39,6 +39,7 @@ endif
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
+INCLUDES += -I ../../../../../../include/openssl
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

@@ -90,11 +90,6 @@ static unsigned portBASE_TYPE uxCriticalNesting = 0;
 
 void vPortEnterCritical( void );
 void vPortExitCritical( void );
-static void pxPortExitTask(void)
-{
-	  vTaskDelete(NULL);
-}
-
 /*
  * See header file for description.
  */
@@ -113,7 +108,7 @@ pxPortInitialiseStack( portSTACK_TYPE *pxTopOfStack, pdTASK_CODE pxCode, void *p
 
     /* Explicitly initialize certain saved registers */
     SET_STKREG( XT_STK_PC,      pxCode                        );  /* task entrypoint                  */
-    SET_STKREG( XT_STK_A0,      pxPortExitTask                           );  /* to terminate GDB backtrace       */
+    SET_STKREG( XT_STK_A0,      0                           );  /* to terminate GDB backtrace       */
     SET_STKREG( XT_STK_A1,      (INT32U)sp + XT_STK_FRMSZ   );  /* physical top of stack frame      */
     SET_STKREG( XT_STK_A2,      pvParameters   );           /* parameters      */
     SET_STKREG( XT_STK_EXIT,    _xt_user_exit               );  /* user exception exit dispatcher   */

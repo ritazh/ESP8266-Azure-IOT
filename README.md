@@ -3,7 +3,7 @@
 
 The [ESP8266](https://en.wikipedia.org/wiki/ESP8266) is a low-cost Wi-Fi chip with full TCP/IP stack and MCU (Micro Controller Unit) capability produced by Espressif Systems. 
 
-The [ESP8266 RTOS SDK version 1.5 beta](https://github.com/espressif/ESP8266_RTOS_SDK) is based on FreeRTOS. This repo integrates ESP8266 RTOS SDK with the [Azure IoT C SDK version 2016-07-29](https://github.com/Azure/azure-iot-sdk-c) to stream data from ESP8266 to Azure IoT using MQTT protocol.
+The [ESP8266 RTOS SDK version 1.5](https://github.com/espressif/ESP8266_RTOS_SDK) is based on FreeRTOS. This repo integrates ESP8266 RTOS SDK version 1.5 commit [bbdf366](https://github.com/espressif/ESP8266_RTOS_SDK/commit/bbdf36667a04af6786c80f8cc34fdc46a2447706) with the [Azure IoT C SDK version 1.1.3](https://github.com/Azure/azure-iot-sdk-c) to stream data from ESP8266 to Azure IoT using MQTT protocol.
 
 ## Installation / Dependencies
 
@@ -112,7 +112,7 @@ To send a message to a device named "RitaIoT":
 iothub-explorer send RitaIoT "hello3" --ack=full
 
 To quit the sample:
-iothub-explorer send RitaIoT “quit" --ack=full
+iothub-explorer send RitaIoT "quit" --ack=full
 ```
 
 > Note: there is a bug in the existing SDK that adds extra characters to the buffer when processing the incoming message. I have created an [issue](https://github.com/Azure/azure-iot-sdk-c/issues/46).

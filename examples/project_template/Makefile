@@ -38,11 +38,11 @@ TARGET_LDFLAGS =		\
 	--text-section-literals
 
 ifeq ($(FLAVOR),debug)
-    TARGET_LDFLAGS += -g -O2 
+    TARGET_LDFLAGS += -g -O2
 endif
 
 ifeq ($(FLAVOR),release)
-    TARGET_LDFLAGS += -g -O0 
+    TARGET_LDFLAGS += -g -O0
 endif
 
 COMPONENTS_eagle.app.v6 = \
@@ -75,10 +75,10 @@ LINKFLAGS_eagle.app.v6 = \
 	-lphy	\
 	-lpp	\
 	-lpwm	\
+	-lmbedtls               \
+    -lopenssl               \
 	-lsmartconfig	\
 	-lspiffs	\
-	-lopenssl               \
-	-lmbedtls               \
 	-lwpa	\
 	-lwps		\
 	$(DEP_LIBS_eagle.app.v6)					\

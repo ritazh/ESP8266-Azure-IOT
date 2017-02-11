@@ -431,6 +431,7 @@ unsigned char* BUFFER_u_char(BUFFER_HANDLE handle)
     }
     else
     {
+        //(void)printf("handleData->buffer: %s \n", handleData->buffer);
         result = handleData->buffer;
     }
     return result;
