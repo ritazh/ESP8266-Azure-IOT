@@ -14,14 +14,17 @@
 
 #define OPENSSL_DEMO_LOCAL_TCP_PORT 1000
 
-#define OPENSSL_DEMO_TARGET_NAME "www.baidu.com"
-#define OPENSSL_DEMO_TARGET_TCP_PORT 443
+//#define OPENSSL_DEMO_TARGET_NAME "www.baidu.com"
+#define OPENSSL_DEMO_TARGET_NAME "lab.azure-devices.net"
+//#define OPENSSL_DEMO_TARGET_TCP_PORT 443
+#define OPENSSL_DEMO_TARGET_TCP_PORT 8883
 
-#define OPENSSL_DEMO_REQUEST "{\"path\": \"/v1/ping/\", \"method\": \"GET\"}\r\n"
+//#define OPENSSL_DEMO_REQUEST "{\"path\": \"/v1/ping/\", \"method\": \"GET\"}\r\n"
+#define OPENSSL_DEMO_REQUEST "CONNECT\r\n"
 
 #define OPENSSL_DEMO_RECV_BUF_LEN 1024
 
-#define OPENSSL_DEMO_REQUEST_COUNT 32
+#define OPENSSL_DEMO_REQUEST_COUNT 5
 
 LOCAL xTaskHandle openssl_handle;
 
@@ -65,6 +68,7 @@ LOCAL void openssl_demo_thread(void *p)
  *     same remote "IP address" and remote port.
  */
 retry_ssl:
+
     os_printf("create SSL context ......");
     ctx = SSL_CTX_new(TLSv1_1_client_method());
     if (!ctx) {
@@ -152,7 +156,7 @@ retry_ssl:
         os_printf("failed, return [-0x%x]\n", -ret);
         goto failed8;
     }
-    os_printf("OK\n\n");
+    os_printf("OK\n");
 
     do {
         ret = SSL_read(ssl, recv_buf, OPENSSL_DEMO_RECV_BUF_LEN - 1);
@@ -160,9 +164,9 @@ retry_ssl:
             break;
         }
         recv_bytes += ret;
-        //os_printf("%s", recv_buf);
+        os_printf("%s", recv_buf);
     } while (1);
-    os_printf("read %d bytes data from %s ......\n", recv_bytes, OPENSSL_DEMO_TARGET_NAME);
+    os_printf("read %d bytes data from %s ......\n\n", recv_bytes, OPENSSL_DEMO_TARGET_NAME);
 
 failed8:
     SSL_shutdown(ssl);
