@@ -284,7 +284,8 @@ int ssl_pm_handshake(SSL *ssl)
     ssl_speed_up_enter();
 
     while((ret = mbedtls_handshake(&ssl_pm->ssl)) != 0) {
-        if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+        if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE
+        		&& ret != MBEDTLS_ERR_SSL_ALLOC_FAILED) {
            break;
         }
     }
@@ -333,7 +334,14 @@ int ssl_pm_read(SSL *ssl, void *buffer, int len)
     int ret;
     struct ssl_pm *ssl_pm = (struct ssl_pm *)ssl->ssl_pm;
 
+    ssl->rwstate = SSL_READING;
+
     ret = mbedtls_ssl_read(&ssl_pm->ssl, buffer, len);
+    if (ret != MBEDTLS_ERR_SSL_WANT_READ) {
+    	//SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL, "mbedtls_ssl_read() set state nothing\n");
+        ssl->rwstate = SSL_NOTHING;
+    }
+
     if (ret < 0) {
         SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL, "mbedtls_ssl_read() return -0x%x", -ret);
         ret = -1;
@@ -347,7 +355,13 @@ int ssl_pm_send(SSL *ssl, const void *buffer, int len)
     int ret;
     struct ssl_pm *ssl_pm = (struct ssl_pm *)ssl->ssl_pm;
 
+    ssl->rwstate = SSL_WRITING;
+
     ret = mbedtls_ssl_write(&ssl_pm->ssl, buffer, len);
+    if (ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+    	//SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL, "mbedtls_ssl_write() set state nothing\n");
+    	ssl->rwstate = SSL_NOTHING;
+    }
     if (ret < 0) {
         SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL, "mbedtls_ssl_write() return -0x%x", -ret);
         ret = -1;

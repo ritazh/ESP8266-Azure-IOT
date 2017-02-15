@@ -415,7 +415,7 @@ sys_arch_assert(const char *file, int line)
 {
     os_printf("\nAssertion: %d in %s\n", line, file);
 
-    while(1);
+    //while(1);
 }
 
 void
