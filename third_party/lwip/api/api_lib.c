@@ -412,6 +412,7 @@ netconn_recv_data(struct netconn *conn, void **new_buf)
     /* If we are closed, we indicate that we no longer wish to use the socket */
     if (buf == NULL) {
       API_EVENT(conn, NETCONN_EVT_RCVMINUS, 0);
+      API_EVENT(conn, NETCONN_EVT_ERROR, 0);
       /* Avoid to lose any previous error code */
       NETCONN_SET_SAFE_ERR(conn, ERR_CLSD);
       return ERR_CLSD;

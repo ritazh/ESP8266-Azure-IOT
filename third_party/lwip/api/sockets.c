@@ -1571,6 +1571,7 @@ lwip_shutdown(int s, int how)
     }
   } else {
     sock_set_errno(sock, ENOTCONN);
+    os_printf("lwip_shutdown : ENOTCONN\n");
     return ENOTCONN;
   }
 
