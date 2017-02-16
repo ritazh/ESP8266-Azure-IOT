@@ -22,6 +22,7 @@
 #include "c_types.h"
 #include "esp_system.h"
 #include "string.h"
+#include "esp_common.h"
 
 #ifdef MEMLEAK_DEBUG
 
@@ -73,7 +74,7 @@ extern void vPortFree(void *pv);
     } while(0)
 #endif
 
-#define SSL_PRINT_LOG ets_printf
+#define SSL_DEBUG_LOG ets_printf
 
 #define LOCAL_ATRR ICACHE_RODATA_ATTR STORE_ATTR
 
