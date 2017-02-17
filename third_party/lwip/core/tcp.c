@@ -1046,6 +1046,7 @@ tcp_slowtmr_start:
       memp_free(MEMP_TCP_PCB, pcb2);
 
       tcp_active_pcbs_changed = 0;
+      os_printf("tcp has been removed\n");
       TCP_EVENT_ERR(err_fn, err_arg, ERR_ABRT);
       if (tcp_active_pcbs_changed) {
         goto tcp_slowtmr_start;
