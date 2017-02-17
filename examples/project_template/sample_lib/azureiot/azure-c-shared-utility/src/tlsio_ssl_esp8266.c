@@ -39,9 +39,9 @@
 /* Codes_SSRS_TLSIO_SSL_ESP8266_99_027: [ The tlsio_openssl_open shall set the tlsio to try to open the connection for 20 times before assuming that connection failed. ]*/
 #define MAX_RETRY 20
 #define MAX_RETRY_WRITE 500
-#define RETRY_DELAY 100000 // 100ms
+#define RETRY_DELAY 1000 * 1000 * 1 // 1s
 #define RECEIVE_BUFFER_SIZE 1024
-#define OPENSSL_SELECT_TIMEOUT 10
+#define OPENSSL_SELECT_TIMEOUT 20
 
 struct timeval timeout = { OPENSSL_SELECT_TIMEOUT, 0 };
 
@@ -323,12 +323,12 @@ LOCAL int openssl_thread_LWIP_CONNECTION(TLS_IO_INSTANCE* p)
                             ret = select(sock + 1, &readset, &writeset, &errset, NULL);
                             if (ret <= 0) {
                                 result = __LINE__;
-                                LogError("select failed");
+                                LogError("select failed: %d\n", lwip_net_errno(sock));
                             } else 
                             {
-                                if (!FD_ISSET(sock, &writeset)) {
+                                if (!FD_ISSET(sock, &writeset) || FD_ISSET(sock, &errset)) {
                                     result = __LINE__;
-                                    LogError("FD_ISSET failed");
+                                    LogError("FD_ISSET failed: %d\n", lwip_net_errno(sock));
                                 }else
                                 {
                                     {
@@ -355,38 +355,62 @@ LOCAL int openssl_thread_LWIP_CONNECTION(TLS_IO_INSTANCE* p)
                                                 /* Codes_SRS_TLSIO_SSL_ESP8266_99_027: [ The tlsio_openssl_open shall set the tlsio to try to open the connection for 20 times before assuming that connection failed. ]*/
                                                 /* Codes_SRS_TLSIO_SSL_ESP8266_99_089: [ If SSL_connect failed, the tlsio_openssl_open shall return __LINE__. ] */
                                                 int retry_connect = 0;
+                                                int connect_succeeded = false;
+
+                                                FD_ZERO(&readset);
+                                                FD_SET(sock, &readset);
+                                                FD_ZERO(&writeset);
+                                                FD_SET(sock, &writeset);
+                                                FD_ZERO(&errset);
+                                                FD_SET(sock, &errset);
                                                 while (retry_connect < MAX_RETRY)
-                                                {  
-                                                    FD_ZERO(&readset);
-                                                    FD_SET(sock, &readset);
-                                                    FD_ZERO(&writeset);
-                                                    FD_SET(sock, &writeset);
-                                                    FD_ZERO(&errset);
-                                                    FD_SET(sock, &errset);
+                                                {
+                                                    int ssl_state;
 
                                                     ret = lwip_select(sock + 1, &readset, &writeset, &errset, &timeout);
 
                                                     if (ret == 0) {
                                                         result = __LINE__;
-                                                        (void*)printf("lwip_select failed \n");
+                                                        LogInfo("SSL connect timeout\n");
                                                         break;
                                                     }
                                                     if (FD_ISSET(sock, &errset)) {
                                                         result = __LINE__;
-                                                        (void*)printf("FD_ISSET failed \n");
+                                                        LogInfo("error return : %d\n", lwip_net_errno(sock));
+                                                        int len = (int) sizeof( int );
+                                                        if (0 != getsockopt (sock, SOL_SOCKET, SO_ERROR, &ret, &len));
+                                                            LogInfo("SSL error ret : %d\n", ret);	// socket is in error state
                                                         break;
                                                     }
 
                                                     ret = SSL_connect(ssl);
-                                                    if (ret == 1) {
+                                                    if (ret == 1) {	// ssl connect success
+                                                        connect_succeeded = true;
+                                                        break;
+                                                    }
+
+                                                    FD_ZERO(&readset);
+                                                    FD_ZERO(&writeset);
+                                                    FD_ZERO(&errset);
+                                                    FD_SET(sock, &errset);
+
+                                                    ssl_state = SSL_get_error(ssl, ret);
+                                                    if (ssl_state == SSL_ERROR_WANT_READ) {
+                                                        FD_SET(sock, &readset);
+                                                    } else if(ssl_state == SSL_ERROR_WANT_WRITE) {
+                                                        FD_SET(sock, &writeset);
+                                                    } else {
+                                                        LogInfo("SSL state:%d\n", ssl_state);
+                                                        result = __LINE__;
                                                         break;
                                                     }
 
                                                     retry_connect = retry_connect + 1;
-                                                    (void*)printf("SSL connect retry: %d \n", retry_connect);
+                                                    LogInfo("SSL connect retry: %d \n", retry_connect);
+                                                    os_delay_us(RETRY_DELAY);
                                                 }
-                                                (void*)printf("total retry_connect: %d ....\n", retry_connect);
-                                                if (retry_connect >= MAX_RETRY)
+
+                                                if (connect_succeeded == false)
                                                 {
                                                     /* Codes_SRS_TLSIO_SSL_ESP8266_99_042: [ If the tlsio_openssl_open retry to open more than 20 times without success, it shall return __LINE__. ]*/
                                                     result = __LINE__;
