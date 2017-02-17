@@ -342,6 +342,7 @@ extern void pbuf_free_ooseq(void);
            end. We then call the error callback to inform the
            application that the connection is dead before we
            deallocate the PCB. */
+    	os_printf("recv_flags & TF_RESET\n");
         TCP_EVENT_ERR(pcb->errf, pcb->callback_arg, ERR_RST);
         tcp_pcb_remove(&tcp_active_pcbs, pcb);
         memp_free(MEMP_TCP_PCB, pcb);
@@ -628,7 +629,7 @@ tcp_process(struct tcp_pcb *pcb)
         acceptable = 1;
       }
     }
-
+    os_printf("Process incoming RST segments.\n");
     if (acceptable) {
       LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_process: Connection RESET\n"));
       LWIP_ASSERT("tcp_input: pcb->state != CLOSED", pcb->state != CLOSED);

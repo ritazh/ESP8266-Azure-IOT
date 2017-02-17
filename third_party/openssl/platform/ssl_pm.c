@@ -283,18 +283,33 @@ int ssl_pm_handshake(SSL *ssl)
 
     ssl_speed_up_enter();
 
+    ret = mbedtls_handshake(&ssl_pm->ssl);
+    if (MBEDTLS_ERR_SSL_WANT_READ == ret) {
+    	ssl->rwstate = SSL_READING;
+    } else if(MBEDTLS_ERR_SSL_WANT_WRITE == ret) {
+    	ssl->rwstate = SSL_WRITING;
+    } else if ((MBEDTLS_ERR_SSL_ALLOC_FAILED + 1) == ret) {
+    	ssl->rwstate = SSL_READING;
+    } else if ((MBEDTLS_ERR_SSL_ALLOC_FAILED + 2) == ret) {
+    	ssl->rwstate = SSL_WRITING;
+    } else {
+    	ssl->rwstate = SSL_NOTHING;
+    }
+
+#if 0
     while((ret = mbedtls_handshake(&ssl_pm->ssl)) != 0) {
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE
         		&& ret != MBEDTLS_ERR_SSL_ALLOC_FAILED) {
            break;
         }
     }
+#endif
 
     ssl_speed_up_exit();
 
     if (ret) {
         SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL, "mbedtls_ssl_handshake() return -0x%x", -ret);
-        ret = 0;
+        ret = -1;
     } else {
         struct x509_pm *x509_pm = (struct x509_pm *)ssl->session->peer->x509_pm;
 

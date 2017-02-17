@@ -421,7 +421,7 @@ int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
             return( MBEDTLS_ERR_SSL_WANT_READ );
 
         if (ENOMEM == err)
-        	return(MBEDTLS_ERR_SSL_ALLOC_FAILED);
+        	return(MBEDTLS_ERR_SSL_ALLOC_FAILED + 1);
 
         os_printf("receive : no block\n");
 
@@ -508,7 +508,7 @@ int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
             return( MBEDTLS_ERR_SSL_WANT_WRITE );
 
         if (ENOMEM == err)
-        	return(MBEDTLS_ERR_SSL_ALLOC_FAILED);
+        	return(MBEDTLS_ERR_SSL_ALLOC_FAILED + 2);
 
         os_printf("send : no block\n");
 
