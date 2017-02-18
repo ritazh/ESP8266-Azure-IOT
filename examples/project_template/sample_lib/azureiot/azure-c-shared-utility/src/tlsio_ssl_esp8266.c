@@ -940,7 +940,7 @@ void tlsio_openssl_dowork(CONCRETE_IO_HANDLE tls_io)
         } 
         else
         {
-            LogError("Invalid tlsio_state for dowork. Expected state is TLSIO_STATE_OPEN.");
+            //LogError("Invalid tlsio_state for dowork. Expected state is TLSIO_STATE_OPEN.");
         }
     }
 
