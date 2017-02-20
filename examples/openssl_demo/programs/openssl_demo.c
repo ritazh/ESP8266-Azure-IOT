@@ -14,17 +14,17 @@
 
 #define OPENSSL_DEMO_LOCAL_TCP_PORT 1000
 
-// #define OPENSSL_DEMO_TARGET_NAME "www.baidu.com"
-// #define OPENSSL_DEMO_TARGET_TCP_PORT 443
-// #define OPENSSL_DEMO_REQUEST "{\"path\": \"/v1/ping/\", \"method\": \"GET\"}\r\n"
+#define OPENSSL_DEMO_TARGET_NAME "www.baidu.com"
+#define OPENSSL_DEMO_TARGET_TCP_PORT 443
+#define OPENSSL_DEMO_REQUEST "{\"path\": \"/v1/ping/\", \"method\": \"GET\"}\r\n"
 
 //#define OPENSSL_DEMO_TARGET_NAME "lab.azure-devices.net"
 //#define OPENSSL_DEMO_TARGET_TCP_PORT 8883
 //#define OPENSSL_DEMO_REQUEST "CONNECT\r\n"
 
-#define OPENSSL_DEMO_TARGET_NAME "lab.azure-devices.net"
-#define OPENSSL_DEMO_TARGET_TCP_PORT 443
-#define OPENSSL_DEMO_REQUEST "GET /ESP8266 HTTP/1.1\r\nHost:lab.azure-devices.net\r\n\r\n"
+// #define OPENSSL_DEMO_TARGET_NAME "lab.azure-devices.net"
+// #define OPENSSL_DEMO_TARGET_TCP_PORT 443
+// #define OPENSSL_DEMO_REQUEST "GET /ESP8266 HTTP/1.1\r\nHost:lab.azure-devices.net\r\n\r\n"
 
 #define OPENSSL_DEMO_RECV_BUF_LEN 1024
 
@@ -85,7 +85,7 @@ static void lwip_set_non_block(int fd)
 }
 
 LOCAL void openssl_demo_thread(void *p)
-{
+{   
     int ret;
     SSL_CTX *ctx;
     SSL *ssl;
@@ -119,6 +119,9 @@ LOCAL void openssl_demo_thread(void *p)
      */
 retry_ssl:
     os_printf("=============================\n");
+    sint8 wifistate = wifi_station_get_rssi();
+    os_printf("wifistate, return %d\n", wifistate);
+    
     os_printf("create SSL context ......");
     ctx = SSL_CTX_new(TLSv1_1_client_method());
     if (!ctx) {
