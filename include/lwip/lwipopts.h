@@ -33,6 +33,10 @@
 #define __LWIPOPTS_H__
 
 #define LWIP_ESP8266
+
+#define SOCKETS_MT
+
+//#define SOCKETS_TCP_TRACE
 /*
    -----------------------------------------------
    ---------- Platform specific locking ----------
@@ -115,6 +119,16 @@
  */
 #define ARP_QUEUEING                    1
 
+#if ARP_QUEUEING
+#ifdef LWIP_ESP8266
+/**
+ * Only queue ARP_ENTRY_QUEUE_SIZE pending outgoing packets for ARP entry.
+ * This limit will be helpful to avoid system running out of memory instantly.
+ * (eg. within 350ms)
+ */
+#define ARP_ENTRY_QUEUE_SIZE            3
+#endif /* LWIP_ESP8266 */
+#endif /* ARP_QUEUEING */
 /*
    --------------------------------
    ---------- IP options ----------
@@ -229,7 +243,7 @@
  * TCP_QUEUE_OOSEQ==1: TCP will queue segments that arrive out of order.
  * Define to 0 if your device is low on memory.
  */
-#define TCP_QUEUE_OOSEQ                 1
+#define TCP_QUEUE_OOSEQ                 0
 
 /*
  *     LWIP_EVENT_API==1: The user defines lwip_tcp_event() to receive all
@@ -390,7 +404,7 @@
 /**
  * SO_REUSE==1: Enable SO_REUSEADDR option.
  */
-#define SO_REUSE                        1
+#define SO_REUSE                        0
 
 /*
    ----------------------------------------

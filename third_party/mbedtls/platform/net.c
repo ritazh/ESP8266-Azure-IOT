@@ -47,9 +47,12 @@
 
 #include <stdint.h>
 
-static void net_str_to_hex(char *buffer, int net_len)
+static int lwip_net_errno(int fd)
 {
-    
+    int sock_errno = 0;
+    u32_t optlen = sizeof(sock_errno);
+    getsockopt(fd, SOL_SOCKET, SO_ERROR, &sock_errno, &optlen);
+    return sock_errno;
 }
 
 /*
@@ -71,16 +74,6 @@ static int net_prepare( void )
 #else
 #endif
     return( 0 );
-}
-
-static int mbedtls_net_errno(int fd)
-{
-    int sock_errno = 0;
-    u32_t optlen = sizeof(sock_errno);
-
-    getsockopt(fd, SOL_SOCKET, SO_ERROR, &sock_errno, &optlen);
-
-    return sock_errno;
 }
 
 /*
@@ -232,18 +225,23 @@ static int net_would_block( const mbedtls_net_context *ctx )
  *
  * Note: on a blocking socket this function always returns 0!
  */
-static int net_would_block( const mbedtls_net_context *ctx )
+static int net_would_block( const mbedtls_net_context *ctx, int *err_code )
 {
+	int err;
+
     /*
      * Never return 'WOULD BLOCK' on a non-blocking socket
      */
-    if ( ( fcntl( ctx->fd, F_GETFL, 0) & O_NONBLOCK ) != O_NONBLOCK ) {
-        return ( 0 );
+    if( ( fcntl( ctx->fd, F_GETFL, 0) & O_NONBLOCK ) != O_NONBLOCK ) {
+    	os_printf("fcntl( ctx->fd, F_GETFL, 0) = %d : O_NONBLOCK = %d\n",
+    			fcntl( ctx->fd, F_GETFL, 0), O_NONBLOCK);
+        return( 0 );
     }
 
-    int error = mbedtls_net_errno(ctx->fd);
+    err = lwip_net_errno(ctx->fd);
 
-    switch ( error ) {
+    switch( err )
+    {
 #if defined EAGAIN
         case EAGAIN:
 #endif
@@ -252,6 +250,8 @@ static int net_would_block( const mbedtls_net_context *ctx )
 #endif
             return( 1 );
     }
+    *err_code = err;
+    //os_printf("errno == %d : EAGAIN= %d : EWOULDBLOCK = %d\n", err, EAGAIN, EWOULDBLOCK);
     return( 0 );
 }
 #endif /* ( _WIN32 || _WIN32_WCE ) && !EFIX64 && !EFI32 */
@@ -263,7 +263,7 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
                         mbedtls_net_context *client_ctx,
                         void *client_ip, size_t buf_size, size_t *ip_len )
 {
-    int ret;
+    int ret, err;
     int type;
 
     struct sockaddr_in client_addr;
@@ -305,7 +305,7 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
 
     if( ret < 0 )
     {
-        if( net_would_block( bind_ctx ) != 0 )
+        if( net_would_block( bind_ctx, &err ) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_READ );
 
         return( MBEDTLS_ERR_NET_ACCEPT_FAILED );
@@ -405,33 +405,35 @@ void mbedtls_net_usleep( unsigned long usec )
  */
 int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
 {
-    int ret;
+    int ret, err;
     int fd = ((mbedtls_net_context *) ctx)->fd;
-    int error = 0;
 
     if( fd < 0 )
         return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
 
-	//os_printf("expected read len %d\n", len);
     ret = (int) read( fd, buf, len );
-	net_str_to_hex(buf, len);
 
     if( ret < 0 )
     {
-        //os_printf("net_would_block ctx %d\n", net_would_block( ctx ));
-        if( net_would_block( ctx ) != 0 )
+    	//os_printf("mbedtls_net_recv <- %d\n", lwip_net_errno(fd));
+
+        if( net_would_block( ctx, &err ) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_READ );
 
-		error = mbedtls_net_errno(fd);
+        if (ENOMEM == err)
+        	return(MBEDTLS_ERR_SSL_ALLOC_FAILED + 1);
+
+        os_printf("receive : no block\n");
+
 #if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
     !defined(EFI32)
         if( WSAGetLastError() == WSAECONNRESET )
             return( MBEDTLS_ERR_NET_CONN_RESET );
 #else
-        if( error == EPIPE || error == ECONNRESET )
+        if( errno == EPIPE || errno == ECONNRESET )
             return( MBEDTLS_ERR_NET_CONN_RESET );
 
-        if( error == EINTR )
+        if( errno == EINTR )
             return( MBEDTLS_ERR_SSL_WANT_READ );
 #endif
 
@@ -490,33 +492,35 @@ int mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
  */
 int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
 {
-    int ret;
+    int ret, err;
     int fd = ((mbedtls_net_context *) ctx)->fd;
 
-    int error = 0;
-
-    if ( fd < 0 ) {
-        return ( MBEDTLS_ERR_NET_INVALID_CONTEXT );
-    }
+    if( fd < 0 )
+        return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
 
     ret = (int) write( fd, buf, len );
-	//os_printf("expected write len %d\n", ret);	
 
-	if( ret < 0 )
+    if( ret < 0 )
     {
-        if( net_would_block( ctx ) != 0 )
+    	//os_printf("mbedtls_net_recv <- %d\n", lwip_net_errno(fd));
+
+        if( net_would_block( ctx, &err ) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_WRITE );
-		
-		error = mbedtls_net_errno(fd);
+
+        if (ENOMEM == err)
+        	return(MBEDTLS_ERR_SSL_ALLOC_FAILED + 2);
+
+        os_printf("send : no block\n");
+
 #if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
     !defined(EFI32)
         if( WSAGetLastError() == WSAECONNRESET )
             return( MBEDTLS_ERR_NET_CONN_RESET );
 #else
-        if( error == EPIPE || error == ECONNRESET )
+        if( errno == EPIPE || errno == ECONNRESET )
             return( MBEDTLS_ERR_NET_CONN_RESET );
 
-        if( error == EINTR )
+        if( errno == EINTR )
             return( MBEDTLS_ERR_SSL_WANT_WRITE );
 #endif
 

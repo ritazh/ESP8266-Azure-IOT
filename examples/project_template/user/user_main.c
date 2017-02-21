@@ -30,7 +30,7 @@
 #include "lwip/opt.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
-#include "openssl/ssl_compat-1.0.h"
+#include "openssl/ssl.h"
 #include "iothub_client_sample_mqtt.h"
 #include "lwip/apps/sntp.h"
 #include "lwip/apps/sntp_time.h"
@@ -40,7 +40,7 @@
 #define OPENSSL_DEMO_THREAD_STACK_WORDS 1024*2
 #define OPENSSL_DEMO_THREAD_PRORIOTY 6
 
-static os_timer_t timer;
+ static os_timer_t timer;
 
 LOCAL void ICACHE_FLASH_ATTR mqtt_sample()
 {
@@ -59,13 +59,20 @@ LOCAL void ICACHE_FLASH_ATTR wait_for_connection_ready(uint8 flag)
     os_printf("ret %d\n", ret);
 
     if(ret == STATION_GOT_IP){
-    	printf("azure iot program starts %d\n", system_get_free_heap_size());
-        xTaskCreate(mqtt_sample,
+        printf("azure iot program starts %d\n", system_get_free_heap_size());
+        
+        int result;
+        result = xTaskCreate(mqtt_sample,
                       OPENSSL_DEMO_THREAD_NAME,
                       OPENSSL_DEMO_THREAD_STACK_WORDS,
                       NULL,
                       OPENSSL_DEMO_THREAD_PRORIOTY,
                       &openssl_handle);
+
+        if (result != pdPASS){
+        os_printf("create thread %s failed\n", OPENSSL_DEMO_THREAD_NAME);
+        return ;
+    }
 
     }else{
         os_timer_disarm(&timer);
@@ -95,6 +102,50 @@ LOCAL void ICACHE_FLASH_ATTR configWiFi()
 }
 
 /******************************************************************************
+ * FunctionName : user_rf_cal_sector_set
+ * Description  : SDK just reversed 4 sectors, used for rf init data and paramters.
+ *                We add this function to force users to set rf cal sector, since
+ *                we don't know which sector is free in user's application.
+ *                sector map for last several sectors : ABCCC
+ *                A : rf cal
+ *                B : rf init data
+ *                C : sdk parameters
+ * Parameters   : none
+ * Returns      : rf cal sector
+*******************************************************************************/
+uint32 user_rf_cal_sector_set(void)
+{
+    flash_size_map size_map = system_get_flash_size_map();
+    uint32 rf_cal_sec = 0;
+
+    switch (size_map) {
+        case FLASH_SIZE_4M_MAP_256_256:
+            rf_cal_sec = 128 - 5;
+            break;
+
+        case FLASH_SIZE_8M_MAP_512_512:
+            rf_cal_sec = 256 - 5;
+            break;
+
+        case FLASH_SIZE_16M_MAP_512_512:
+        case FLASH_SIZE_16M_MAP_1024_1024:
+            rf_cal_sec = 512 - 5;
+            break;
+
+        case FLASH_SIZE_32M_MAP_512_512:
+        case FLASH_SIZE_32M_MAP_1024_1024:
+            rf_cal_sec = 1024 - 5;
+            break;
+
+        default:
+            rf_cal_sec = 0;
+            break;
+    }
+
+    return rf_cal_sec;
+}
+
+/******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
  * Parameters   : none
@@ -102,31 +153,17 @@ LOCAL void ICACHE_FLASH_ATTR configWiFi()
 *******************************************************************************/
 void user_init(void)
 {
+    printf("SDK version:%s\n", system_get_sdk_version());
     //mac host doesn't like 74880.  uart_init doesn't work, use uart_div_modify
     uart_div_modify(0, UART_CLK_FREQ / 115200);
     //If you need to use a different UART port:
     // os_install_putc1((void *)uart1_write_char);
     // uart_div_modify(1, UART_CLK_FREQ / 115200);
-
-    //printf("SDK version:%s\n", system_get_sdk_version());
     //printf("user_init: %d\n", system_get_free_heap_size());
     //set system time
     //set_time();
     //lwip_connection_test();
     configWiFi();
     //iothub_client_sample_amqp_run();
-}
-
-int _gettimeofday_r(struct _reent r, struct timeval tv, void *tz) {
-return 0;
-}
-
-int _getpid_r()
-{
-    return 0;
-}
-
-void _kill_r()
-{
 }
 

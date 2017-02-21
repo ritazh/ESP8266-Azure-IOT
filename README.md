@@ -3,7 +3,7 @@
 
 The [ESP8266](https://en.wikipedia.org/wiki/ESP8266) is a low-cost Wi-Fi chip with full TCP/IP stack and MCU (Micro Controller Unit) capability produced by Espressif Systems. 
 
-The [ESP8266 RTOS SDK version 1.5 beta](https://github.com/espressif/ESP8266_RTOS_SDK) is based on FreeRTOS. This repo integrates ESP8266 RTOS SDK with the [Azure IoT C SDK version 2016-07-29](https://github.com/Azure/azure-iot-sdk-c) to stream data from ESP8266 to Azure IoT using MQTT protocol.
+The [ESP8266 RTOS SDK version v1.5](https://github.com/espressif/ESP8266_RTOS_SDK) is based on FreeRTOS. This repo integrates ESP8266 RTOS SDK version 1.5 commit [bbdf366](https://github.com/espressif/ESP8266_RTOS_SDK/commit/bbdf36667a04af6786c80f8cc34fdc46a2447706) with the [Azure IoT C SDK version 1.1.3](https://github.com/Azure/azure-iot-sdk-c) to stream data from ESP8266 to Azure IoT using MQTT protocol.
 
 ## Installation / Dependencies
 
@@ -105,14 +105,14 @@ To customize this sample solution for your own use, update `/examples/project_te
 
 ## What's in the Sample?
 
-In the [mqtt sample](https://github.com/ritazh/ESP8266-Azure-IOT/blob/master/examples/project_template/user/iothub_client_sample_mqtt.c), it sends 500 messages to Azure, then it will wait until cloud sends a “quit” message to end the program. Before the program ends, you can send any message to the device by using the [iothub-explorer](https://github.com/Azure/iothub-explorer) like the following:
+In the [mqtt sample](https://github.com/ritazh/ESP8266-Azure-IOT/blob/master/examples/project_template/user/iothub_client_sample_mqtt.c), it continues to send messages to Azure, until cloud sends a "quit" message to end the program. Before the program ends, you can send any message to the device by using the [iothub-explorer](https://github.com/Azure/iothub-explorer) like the following:
 
 ```
 To send a message to a device named "RitaIoT":
 iothub-explorer send RitaIoT "hello3" --ack=full
 
 To quit the sample:
-iothub-explorer send RitaIoT “quit" --ack=full
+iothub-explorer send RitaIoT "quit" --ack=full
 ```
-
-> Note: there is a bug in the existing SDK that adds extra characters to the buffer when processing the incoming message. I have created an [issue](https://github.com/Azure/azure-iot-sdk-c/issues/46).
+You can also send a direct method request to invoke a direct method on the device. For example, using [Device Explorer](https://github.com/Azure/azure-iot-sdk-csharp/tree/master/tools/DeviceExplorer) to call a method and the method will return a payload:
+![Direct method test](deviceexplorer.png)

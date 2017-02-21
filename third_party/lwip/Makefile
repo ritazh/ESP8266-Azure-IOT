@@ -15,12 +15,12 @@ ifndef PDIR
 UP_EXTRACT_DIR = ..
 GEN_LIBS = liblwip.a
 COMPONENTS_liblwip = api/liblwipapi.a	\
-			 apps/liblwipapps.a \
 		     arch/liblwiparch.a	\
 						core/liblwipcore.a	\
 						core/ipv4/liblwipipv4.a	\
 						core/ipv6/liblwipipv6.a	\
-						netif/liblwipnetif.a
+						netif/liblwipnetif.a	\
+						apps/liblwipapps.a
 endif
 
 CCFLAGS += -fno-aggressive-loop-optimizations
@@ -32,7 +32,10 @@ CCFLAGS += -fno-aggressive-loop-optimizations
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+DEFINES += -D_POSIX_SOURCE \
+			-DLWIP_OPEN_SRC	\
+			-DPBUF_RSV_FOR_WLAN	\
+			-DEBUF_LWIP
 
 #############################################################
 # Recursion Magic - Don't touch this!!

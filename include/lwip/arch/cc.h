@@ -39,7 +39,7 @@
 #define EFAULT 14
 
 #define ERRNO
-//#define LWIP_PROVIDE_ERRNO
+#define LWIP_PROVIDE_ERRNO
 
 #if (1)
 #define BYTE_ORDER LITTLE_ENDIAN
@@ -64,7 +64,7 @@ typedef int sys_prot_t;
 #define PACK_STRUCT_BEGIN
 #define PACK_STRUCT_END
 
-//#define LWIP_DEBUG
+// #define LWIP_DEBUG
 
 #include <stdio.h>
 

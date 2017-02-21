@@ -695,7 +695,7 @@ void websocket_start(void *optarg)
 		Web_QueueStop = xQueueCreate(1,1);
 
 	if (Web_QueueStop != NULL)
-		xTaskCreate(websocket_task, "websocket_task", 1024, optarg, 4, NULL);
+		xTaskCreate(websocket_task, "websocket_task", 512, optarg, 4, NULL);
 }
 
 /*stop the websocket task*/

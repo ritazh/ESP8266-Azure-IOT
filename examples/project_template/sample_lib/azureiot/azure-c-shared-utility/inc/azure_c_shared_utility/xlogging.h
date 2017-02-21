@@ -12,11 +12,15 @@
 
 #include "azure_c_shared_utility/agenttime.h"
 
+#ifdef TIZENRT
+#undef LOG_INFO
+#endif
+
 typedef enum LOG_CATEGORY_TAG
 {
-    LOG_ERROR,
-    LOG_INFO,
-    LOG_TRACE
+    AZ_LOG_ERROR,
+    AZ_LOG_INFO,
+    AZ_LOG_TRACE
 } LOG_CATEGORY;
 
 #if defined _MSC_VER
@@ -55,23 +59,26 @@ typedef void(*LOGGER_LOG)(LOG_CATEGORY log_category, const char* file, const cha
         printf("\r\n"); \
 }
 
-
 #elif defined(ARDUINO_ARCH_ESP8266)
 /*
-The ESP8266 compiler don’t do a good job compiling this code, it do not understand that the ‘format’ is
-a ‘cont char*’ and moves it to the RAM as a global variable, increasing a lot the .bss. So, we create a
-specific LogInfo that explicitly pin the ‘format’ on the PROGMEM (flash) using a _localFORMAT variable
+The ESP8266 compiler doesn't do a good job compiling this code; it doesn't understand that the 'format' is
+a 'const char*' and moves it to RAM as a global variable, increasing the .bss size. So we create a
+specific LogInfo that explicitly pins the 'format' on the PROGMEM (flash) using a _localFORMAT variable
 with the macro PSTR.
-
 #define ICACHE_FLASH_ATTR   __attribute__((section(".irom0.text")))
 #define PROGMEM     ICACHE_RODATA_ATTR
 #define PSTR(s) (__extension__({static const char __c[] PROGMEM = (s); &__c[0];}))
 const char* __localFORMAT = PSTR(FORMAT);
-
-On the other hand, vsprintf do not support the pinned ‘format’ and os_printf do not works with va_list,
+On the other hand, vsprintf does not support the pinned 'format' and os_printf does not work with va_list,
 so we compacted the log in the macro LogInfo.
 */
 #include "esp8266/azcpgmspace.h"
+#define LOG(log_category, log_options, FORMAT, ...) { \
+        const char* __localFORMAT = PSTR(FORMAT); \
+        os_printf(__localFORMAT, ##__VA_ARGS__); \
+        os_printf("\r\n"); \
+}
+
 #define LogInfo(FORMAT, ...) { \
         const char* __localFORMAT = PSTR(FORMAT); \
         os_printf(__localFORMAT, ##__VA_ARGS__); \
@@ -88,13 +95,13 @@ so we compacted the log in the macro LogInfo.
 #endif
 
 #if defined _MSC_VER
-#define LogInfo(FORMAT, ...) do{LOG(LOG_INFO, LOG_LINE, FORMAT, __VA_ARGS__); }while(0)
+#define LogInfo(FORMAT, ...) do{LOG(AZ_LOG_INFO, LOG_LINE, FORMAT, __VA_ARGS__); }while(0)
 #else
-#define LogInfo(FORMAT, ...) do{LOG(LOG_INFO, LOG_LINE, FORMAT, ##__VA_ARGS__); }while(0)
+#define LogInfo(FORMAT, ...) do{LOG(AZ_LOG_INFO, LOG_LINE, FORMAT, ##__VA_ARGS__); }while(0)
 #endif
 
 #if defined _MSC_VER
-#define LogError(FORMAT, ...) do{ LOG(LOG_ERROR, LOG_LINE, FORMAT, __VA_ARGS__); }while(0)
+#define LogError(FORMAT, ...) do{ LOG(AZ_LOG_ERROR, LOG_LINE, FORMAT, __VA_ARGS__); }while(0)
 #define TEMP_BUFFER_SIZE 1024
 #define MESSAGE_BUFFER_SIZE 260
 #define LogErrorWinHTTPWithGetLastErrorAsString(FORMAT, ...) do { \
@@ -128,7 +135,7 @@ so we compacted the log in the macro LogInfo.
                 }\
             } while(0)
 #else
-#define LogError(FORMAT, ...) do{ LOG(LOG_ERROR, LOG_LINE, FORMAT, ##__VA_ARGS__); }while(0)
+#define LogError(FORMAT, ...) do{ LOG(AZ_LOG_ERROR, LOG_LINE, FORMAT, ##__VA_ARGS__); }while(0)
 #endif
 
 #ifdef __cplusplus
@@ -143,5 +150,28 @@ extern LOGGER_LOG xlogging_get_log_function(void);
 #endif /* __cplusplus */
 
 #endif /* ARDUINO_ARCH_ESP8266 */
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+    /**
+     * @brief   Print the memory content byte pre byte in hexadecimal and as a char it the byte correspond to any printable ASCII chars.
+     *
+     *    This function prints the 'size' bytes in the 'buf' to the log. It will print in portions of 16 bytes, 
+     *         and will print the byte as a hexadecimal value, and, it is a printable, this function will print 
+     *         the correspondent ASCII character.
+     *    Non printable characters will shows as a single '.'. 
+     *    For this function, printable characters are all characters between ' ' (0x20) and '~' (0x7E).
+     *
+     * @param   buf  Pointer to the memory address with the buffer to print.
+     * @param   size Number of bytes to print.
+     */
+    extern void xlogging_dump_buffer(const void* buf, size_t size);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* XLOGGING_H */
