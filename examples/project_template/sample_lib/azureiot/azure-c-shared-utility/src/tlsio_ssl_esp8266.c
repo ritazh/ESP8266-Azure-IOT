@@ -219,7 +219,7 @@ LOCAL int openssl_thread_LWIP_CONNECTION(TLS_IO_INSTANCE* p)
     SSL_CTX *ctx;
     SSL *ssl;
 
-    struct linger so_linger;
+//    struct linger so_linger;
 
     TLS_IO_INSTANCE* tls_io_instance = p;
 
@@ -251,15 +251,16 @@ LOCAL int openssl_thread_LWIP_CONNECTION(TLS_IO_INSTANCE* p)
                 tls_io_instance->sock = sock;
                 LogInfo("sock: %d", sock);
                 LogInfo("create socket OK");
-                so_linger.l_onoff = 1;
-                so_linger.l_linger = 1;
-                /* Codes_SRS_TLSIO_SSL_ESP8266_99_081: [ If setsockopt failed, the tlsio_openssl_open shall return __LINE__. ] */
-                ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &so_linger, sizeof(so_linger));
-                if (ret != 0) {
-                    result = __LINE__;
-                    LogError("setsockopt failed");
-                }
-                else {
+//                so_linger.l_onoff = 1;
+//                so_linger.l_linger = 1;
+//                /* Codes_SRS_TLSIO_SSL_ESP8266_99_081: [ If setsockopt failed, the tlsio_openssl_open shall return __LINE__. ] */
+//                ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &so_linger, sizeof(so_linger));
+//                if (ret != 0) {
+//                    result = __LINE__;
+//                    LogError("setsockopt failed");
+//                }
+//                else {
+                {
 
                     lwip_set_non_block(sock);
 
@@ -267,7 +268,7 @@ LOCAL int openssl_thread_LWIP_CONNECTION(TLS_IO_INSTANCE* p)
                     memset(&sock_addr, 0, sizeof(sock_addr));
                     sock_addr.sin_family = AF_INET;
                     sock_addr.sin_addr.s_addr = 0;
-                    sock_addr.sin_port = htons(OPENSSL_LOCAL_TCP_PORT);
+                    sock_addr.sin_port = 0; //htons(OPENSSL_LOCAL_TCP_PORT);
                     /* Codes_SRS_TLSIO_SSL_ESP8266_99_082: [ If bind failed, the tlsio_openssl_open shall return __LINE__. ] */
                     ret = bind(sock, (struct sockaddr*)&sock_addr, sizeof(sock_addr));
                     
@@ -284,7 +285,7 @@ LOCAL int openssl_thread_LWIP_CONNECTION(TLS_IO_INSTANCE* p)
                         sock_addr.sin_port = htons(tls_io_instance->port);
 
                         ret = connect(sock, (struct sockaddr*)&sock_addr, sizeof(sock_addr));
-                        (void*)printf("connect return: %d \n", ret);
+                        (void*)printf("connect return: %d %s\n", ret, ip_ntoa(&tls_io_instance->target_ip));
                         //(void*)printf("EINPROGRESS: %d \n", EINPROGRESS);
                         if (ret == -1) {
                             ret = lwip_net_errno(sock);
