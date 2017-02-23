@@ -436,7 +436,7 @@
 /**
  * LWIP_IPV6==1: Enable IPv6
  */
-#define LWIP_IPV6                       1
+#define LWIP_IPV6                       0
 
 /*
    ---------------------------------------
@@ -493,6 +493,8 @@
  * TCPIP_DEBUG: Enable debugging in tcpip.c.
  */
 #define TCPIP_DEBUG                     LWIP_DBG_OFF
+
+#define TCP_DEBUG                     LWIP_DBG_OFF
 
 /**
  * DHCP_DEBUG: Enable debugging in dhcp.c.
