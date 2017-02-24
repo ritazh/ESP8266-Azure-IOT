@@ -846,12 +846,13 @@ int tlsio_openssl_send(CONCRETE_IO_HANDLE tls_io, const void* buffer, size_t siz
             int total_write = 0;
             int ret = 0;
             int retry_write = 0;
-            int need_sent_bytes = size;
+            int need_send_bytes = size;
+            int send_succeeded = false;
 
             fd_set writeset;
             fd_set errset;
             /* Codes_SRS_TLSIO_SSL_ESP8266_99_056: [ If the ssl was not able to send all data in the buffer, the tlsio_openssl_send shall call the ssl again to send the remaining bytes until MAX_RETRY_WRITE has been reached. ]*/
-            while(need_sent_bytes > 0 && retry_write < MAX_RETRY_WRITE){
+            while(need_send_bytes > 0 && retry_write < MAX_RETRY_WRITE){
                 FD_ZERO(&writeset);
                 FD_SET(tls_io_instance->sock, &writeset);
                 FD_ZERO(&errset);
@@ -872,7 +873,10 @@ int tlsio_openssl_send(CONCRETE_IO_HANDLE tls_io, const void* buffer, size_t siz
                 //LogInfo("SSL_write res: %d, size: %d, retry: %d", res, size, retry);
                 if(ret > 0){
                     total_write += ret;
-                    need_sent_bytes = need_sent_bytes - ret;
+                    need_send_bytes = need_send_bytes - ret;
+                    if (need_send_bytes == 0) {
+                        send_succeeded = true;
+                    }
                 }
                 else
                 {
@@ -880,7 +884,7 @@ int tlsio_openssl_send(CONCRETE_IO_HANDLE tls_io, const void* buffer, size_t siz
                 }
             }
             printf("total retry_write: %d and total_write: %d  ....\n", retry_write, total_write);
-            if (retry_write >= MAX_RETRY_WRITE)
+            if (send_succeeded == false)
             {
                 printf("ssl write failed, return [-0x%x]\n", -ret);
                 FD_ZERO(&writeset);
