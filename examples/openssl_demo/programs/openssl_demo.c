@@ -151,15 +151,15 @@ retry_ssl:
     }
     os_printf("OK\n");
 
-    os_printf("set socket SO_LINGER function......");
-    so_linger.l_onoff = 1;
-    so_linger.l_linger = 1;
-    ret = setsockopt(socket, SOL_SOCKET, SO_LINGER, &so_linger, sizeof(so_linger));
-    if (ret) {
-        os_printf("failed\n");
-        goto failed3;
-    }
-    os_printf("OK\n");
+    // os_printf("set socket SO_LINGER function......");
+    // so_linger.l_onoff = 1;
+    // so_linger.l_linger = 1;
+    // ret = setsockopt(socket, SOL_SOCKET, SO_LINGER, &so_linger, sizeof(so_linger));
+    // if (ret) {
+    //     os_printf("failed\n");
+    //     goto failed3;
+    // }
+    // os_printf("OK\n");
 
     lwip_set_non_block(socket);
 
@@ -167,7 +167,7 @@ retry_ssl:
     memset(&sock_addr, 0, sizeof(sock_addr));
     sock_addr.sin_family = AF_INET;
     sock_addr.sin_addr.s_addr = 0;
-    sock_addr.sin_port = htons(OPENSSL_DEMO_LOCAL_TCP_PORT);
+    sock_addr.sin_port = 0; // random port
     ret = bind(socket, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
     if (ret) {
         os_printf("failed\n");
