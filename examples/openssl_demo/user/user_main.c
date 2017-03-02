@@ -78,7 +78,7 @@ void wifi_event_handler_cb(System_Event_t *event)
     switch (event->event_id) {
         case EVENT_STAMODE_GOT_IP:
             os_printf("sta got ip , creat task %d\n", system_get_free_heap_size());
-            user_conn_init();
+
             break;
 
         default:
@@ -105,5 +105,7 @@ void user_init(void)
     sprintf(config.password, PASSWORD);
     wifi_station_set_config(&config);
 
-    wifi_set_event_handler_cb(wifi_event_handler_cb);
+//    wifi_set_event_handler_cb(wifi_event_handler_cb);
+
+    user_conn_init();
 }
