@@ -116,3 +116,6 @@ iothub-explorer send RitaIoT "quit" --ack=full
 ```
 You can also send a direct method request to invoke a direct method on the device. For example, using [Device Explorer](https://github.com/Azure/azure-iot-sdk-csharp/tree/master/tools/DeviceExplorer) to call a method and the method will return a payload:
 ![Direct method test](deviceexplorer.png)
+
+## License
+Licensed as MIT - please see LICENSE for details.
