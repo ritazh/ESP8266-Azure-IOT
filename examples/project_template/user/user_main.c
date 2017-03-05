@@ -44,6 +44,15 @@
 
 LOCAL void ICACHE_FLASH_ATTR mqtt_sample()
 {
+    while (1) {
+        struct ip_info info;
+        wifi_get_ip_info(STATION_IF, &info);
+        if (info.ip.addr != 0) {
+            break;
+        } else {
+            vTaskDelay(10);
+        }
+    }
     iothub_client_sample_mqtt_run();
     vTaskDelete(NULL);
 }
@@ -85,6 +94,7 @@ LOCAL void ICACHE_FLASH_ATTR configWiFi()
 {
     uint8 ssid[] = {'s','s','i','d'};
     uint8 password[] = {'p','a','s','s','w','o','r','d'}; 
+
 
     struct station_config sta_conf;
     wifi_set_opmode(STATION_MODE);
