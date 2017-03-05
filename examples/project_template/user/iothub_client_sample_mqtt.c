@@ -25,6 +25,7 @@ static int callbackCounter;
 static char msgText[1024];
 static char propText[1024];
 static bool g_continueRunning;
+static bool g_resend;
 #define MESSAGE_COUNT 500
 #define DOWORK_LOOP_NUM     3
 
@@ -126,8 +127,19 @@ static void SendConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, v
 
     (void)printf("Confirmation[%d] received for message tracking id = %d with result = %s\r\n", callbackCounter, (int)id, ENUM_TO_STRING(IOTHUB_CLIENT_CONFIRMATION_RESULT, result));
     /* Some device specific action code goes here... */
-    callbackCounter++;
-    IoTHubMessage_Destroy(eventInstance->messageHandle);
+    if (result != IOTHUB_CLIENT_CONFIRMATION_OK)
+    {
+        g_resend = true;
+        (void)printf("g_resend is true \n");
+    }
+    else
+    {
+        g_resend = false;
+        callbackCounter++;
+        IoTHubMessage_Destroy(eventInstance->messageHandle);
+        (void)printf("messageHandle destroyed \n");
+    }
+
 }
 
 void iothub_client_sample_mqtt_run(void)
@@ -138,6 +150,7 @@ void iothub_client_sample_mqtt_run(void)
     EVENT_INSTANCE messages[MESSAGE_COUNT];
 
     g_continueRunning = true;
+    g_resend = false;
     //srand((unsigned int)time(NULL));
     double avgWindSpeed = 10.0;
     
@@ -189,37 +202,54 @@ void iothub_client_sample_mqtt_run(void)
                 int n = 0;
                 do
                 {
-                    if (iterator < MESSAGE_COUNT && (iterator<= callbackCounter))
+                    if (iterator < MESSAGE_COUNT && ((iterator<= callbackCounter) || g_resend == true))
                     {
-                        int index = 0;
-                        index = n*500 + (int)iterator;
-                        sprintf_s(msgText, sizeof(msgText), "{\"deviceId\":\"myESP8266Device_%d\",\"windSpeed\":%.2f}", index, avgWindSpeed + (rand() % 4 + 2));
-                        //(void)printf("size before IoTHubMessage_CreateFromByteArray: %d \n", system_get_free_heap_size());
-                        if ((messages[iterator].messageHandle = IoTHubMessage_CreateFromByteArray((const unsigned char*)msgText, strlen(msgText))) == NULL)
+                        if (g_resend == false)
                         {
-                            (void)printf("ERROR: iotHubMessageHandle is NULL!\r\n");
+                            int index = 0;
+                            index = n*500 + (int)iterator;
+                            sprintf_s(msgText, sizeof(msgText), "{\"deviceId\":\"myESP8266Device_%d\",\"windSpeed\":%.2f}", index, avgWindSpeed + (rand() % 4 + 2));
+                            //(void)printf("size before IoTHubMessage_CreateFromByteArray: %d \n", system_get_free_heap_size());
+                            if ((messages[iterator].messageHandle = IoTHubMessage_CreateFromByteArray((const unsigned char*)msgText, strlen(msgText))) == NULL)
+                            {
+                                (void)printf("ERROR: iotHubMessageHandle is NULL!\r\n");
+                            }
+                            else
+                            {
+                                messages[iterator].messageTrackingId = iterator;
+                                //(void)printf("size before IoTHubMessage_Properties: %d \n", system_get_free_heap_size());
+                                MAP_HANDLE propMap = IoTHubMessage_Properties(messages[iterator].messageHandle);
+                                (void)sprintf_s(propText, sizeof(propText), "PropMsg_%zu", iterator);
+                                if (Map_AddOrUpdate(propMap, "PropName", propText) != MAP_OK)
+                                {
+                                    (void)printf("ERROR: Map_AddOrUpdate Failed!\r\n");
+                                }
+                                //(void)printf("free heap size before IoTHubClient_LL_SendEventAsync: %d \n", system_get_free_heap_size());
+                                if (IoTHubClient_LL_SendEventAsync(iotHubClientHandle, messages[iterator].messageHandle, SendConfirmationCallback, &messages[iterator]) != IOTHUB_CLIENT_OK)
+                                {
+                                    (void)printf("ERROR: IoTHubClient_LL_SendEventAsync..........FAILED!\r\n");
+                                }
+                                else
+                                {
+                                    (void)printf("IoTHubClient_LL_SendEventAsync accepted message [%d] for transmission to IoT Hub.\r\n", (int)iterator);
+                                }
+                            }
+                            iterator++;
                         }
                         else
                         {
-                            messages[iterator].messageTrackingId = iterator;
-                            //(void)printf("size before IoTHubMessage_Properties: %d \n", system_get_free_heap_size());
-                            MAP_HANDLE propMap = IoTHubMessage_Properties(messages[iterator].messageHandle);
-                            (void)sprintf_s(propText, sizeof(propText), "PropMsg_%zu", iterator);
-                            if (Map_AddOrUpdate(propMap, "PropName", propText) != MAP_OK)
-                            {
-                                (void)printf("ERROR: Map_AddOrUpdate Failed!\r\n");
-                            }
-                            //(void)printf("free heap size before IoTHubClient_LL_SendEventAsync: %d \n", system_get_free_heap_size());
-                            if (IoTHubClient_LL_SendEventAsync(iotHubClientHandle, messages[iterator].messageHandle, SendConfirmationCallback, &messages[iterator]) != IOTHUB_CLIENT_OK)
+                            (void)printf("message [%d] needs to be resent to IoT Hub.\r\n", (int)(iterator-1));
+
+                            if (IoTHubClient_LL_SendEventAsync(iotHubClientHandle, messages[iterator-1].messageHandle, SendConfirmationCallback, &messages[iterator-1]) != IOTHUB_CLIENT_OK)
                             {
                                 (void)printf("ERROR: IoTHubClient_LL_SendEventAsync..........FAILED!\r\n");
                             }
                             else
                             {
-                                (void)printf("IoTHubClient_LL_SendEventAsync accepted message [%d] for transmission to IoT Hub.\r\n", (int)iterator);
+                                (void)printf("IoTHubClient_LL_SendEventAsync accepted to resend message [%d] for transmission to IoT Hub.\r\n", (int)(iterator-1));
                             }
+                            g_resend = false;
                         }
-                        iterator++;
                     }
 
                     IoTHubClient_LL_DoWork(iotHubClientHandle);
