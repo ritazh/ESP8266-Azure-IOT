@@ -6,6 +6,8 @@
 #include "espressif/c_types.h"
 #include "lwip/sockets.h"
 
+#include "esp_wifi.h"
+
 #define OPENSSL_DEMO_THREAD_NAME "ssl_demo"
 #define OPENSSL_DEMO_THREAD_STACK_WORDS 2048
 #define OPENSSL_DEMO_THREAD_PRORIOTY 6
@@ -32,8 +34,8 @@
 
 #define OPENSSL_DEMO_SELECT_TIMEOUT 20
 
-#define MAX_RETRY 20
-#define MAX_RETRY_WRITE 500
+#define MAX_RETRY 20000
+//#define MAX_RETRY_WRITE 500
 #define RETRY_DELAY 1000 * 1000 * 10// 10s
 
 LOCAL xTaskHandle openssl_handle;
@@ -85,7 +87,7 @@ static void lwip_set_non_block(int fd)
 }
 
 LOCAL void openssl_demo_thread(void *p)
-{   
+{
     int ret;
     SSL_CTX *ctx;
     SSL *ssl;
@@ -103,120 +105,139 @@ LOCAL void openssl_demo_thread(void *p)
     int test_count = 0;
     os_printf("OpenSSL demo thread start...\n");
 
-    do {
-        ret = netconn_gethostbyname(OPENSSL_DEMO_TARGET_NAME, &target_ip);
-    } while (ret);
-    os_printf("get target IP is %d.%d.%d.%d\n", (unsigned char)((target_ip.addr & 0x000000ff) >> 0),
-              (unsigned char)((target_ip.addr & 0x0000ff00) >> 8),
-              (unsigned char)((target_ip.addr & 0x00ff0000) >> 16),
-              (unsigned char)((target_ip.addr & 0xff000000) >> 24));
+    while (1) {
+        while (1) {
+            struct ip_info info;
+            wifi_get_ip_info(STATION_IF, &info);
+            if (info.ip.addr != 0) {
+                break;
+            } else {
+                vTaskDelay(10);
+            }
+        }
+        // got ip and do next work
+        do {
+            ret = netconn_gethostbyname(OPENSSL_DEMO_TARGET_NAME, &target_ip);
+        } while (ret);
+        os_printf("get target IP is %d.%d.%d.%d\n", (unsigned char)((target_ip.addr & 0x000000ff) >> 0),
+                  (unsigned char)((target_ip.addr & 0x0000ff00) >> 8),
+                  (unsigned char)((target_ip.addr & 0x00ff0000) >> 16),
+                  (unsigned char)((target_ip.addr & 0xff000000) >> 24));
 
-    /*
-     * Add the customer function(SO_LINKER) here:
-     *     Create the socket with the same local "IP address" and local port,
-     *     then make the socket to connect the target TCP server with the the
-     *     same remote "IP address" and remote port.
-     */
-retry_ssl:
-    os_printf("=============================\n");
-    sint8 wifistate = wifi_station_get_rssi();
-    os_printf("wifistate, return %d\n", wifistate);
-    
-    os_printf("create SSL context ......");
-    ctx = SSL_CTX_new(TLSv1_1_client_method());
-    if (!ctx) {
-        os_printf("failed\n");
-        goto failed1;
-    }
-    os_printf("OK\n");
+        /*
+         * Add the customer function(SO_LINKER) here:
+         *     Create the socket with the same local "IP address" and local port,
+         *     then make the socket to connect the target TCP server with the the
+         *     same remote "IP address" and remote port.
+         */
 
-    os_printf("set SSL context read buffer size ......");
-    SSL_CTX_set_default_read_buffer_len(ctx, OPENSSL_DEMO_FRAGMENT_SIZE);
-    ret = 0;
-    if (ret) {
-        os_printf("failed, return %d\n", ret);
-        goto failed2;
-    }
-    os_printf("OK\n");
+        os_printf("=============================\n");
+        sint8 wifistate = wifi_station_get_rssi();
+        os_printf("wifistate, return %d\n", wifistate);
 
-    test_count++;
-
-    os_printf("free heap size: %d\n", system_get_free_heap_size());
-
-    os_printf("create socket ......");
-    socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (socket < 0) {
-        os_printf("failed\n");
-        goto failed3;
-    }
-    os_printf("OK\n");
-
-    // os_printf("set socket SO_LINGER function......");
-    // so_linger.l_onoff = 1;
-    // so_linger.l_linger = 1;
-    // ret = setsockopt(socket, SOL_SOCKET, SO_LINGER, &so_linger, sizeof(so_linger));
-    // if (ret) {
-    //     os_printf("failed\n");
-    //     goto failed3;
-    // }
-    // os_printf("OK\n");
-
-    lwip_set_non_block(socket);
-
-    os_printf("bind socket ......");
-    memset(&sock_addr, 0, sizeof(sock_addr));
-    sock_addr.sin_family = AF_INET;
-    sock_addr.sin_addr.s_addr = 0;
-    sock_addr.sin_port = 0; // random port
-    ret = bind(socket, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
-    if (ret) {
-        os_printf("failed\n");
-        goto failed4;
-    }
-    os_printf("OK\n");
-
-    os_printf("socket connect to remote ......");
-    memset(&sock_addr, 0, sizeof(sock_addr));
-    sock_addr.sin_family = AF_INET;
-    sock_addr.sin_addr.s_addr = target_ip.addr;
-    sock_addr.sin_port = htons(OPENSSL_DEMO_TARGET_TCP_PORT);
-
-    ret = connect(socket, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
-
-    if (ret == -1) {
-        ret = lwip_net_errno(socket);
-        printf("lwip_net_errno ret: %d \n", ret);
-        /* Codes_SRS_TLSIO_SSL_ESP8266_99_083: [ If connect and getsockopt failed, the tlsio_openssl_open shall return __LINE__. ] */
-        if (ret != 115) { // EINPROGRESS
-            ret = -1;
+        os_printf("create SSL context ......");
+        ctx = SSL_CTX_new(TLSv1_1_client_method());
+        if (!ctx) {
             os_printf("failed\n");
-            goto failed5;
-        } else {
-            FD_ZERO(&readset);
-            FD_ZERO(&writeset);
-            FD_ZERO(&errset);
+            goto failed1;
+        }
+        os_printf("OK\n");
 
-            FD_SET(socket, &readset);
-            FD_SET(socket, &writeset);
-            FD_SET(socket, &errset);
+        os_printf("set SSL context read buffer size ......");
+        SSL_CTX_set_default_read_buffer_len(ctx, OPENSSL_DEMO_FRAGMENT_SIZE);
+        ret = 0;
+        if (ret) {
+            os_printf("failed, return %d\n", ret);
+            goto failed2;
+        }
+        os_printf("OK\n");
 
-            ret = select(socket + 1, NULL, &writeset, &errset, NULL);
-            if (ret <= 0) {
-                os_printf("Error: select return :%d\n", lwip_net_errno(socket)); // select timeout and so on
+        test_count++;
+
+        os_printf("free heap size: %d\n", system_get_free_heap_size());
+
+        os_printf("create socket ......");
+        socket = socket(AF_INET, SOCK_STREAM, 0);
+        if (socket < 0) {
+            os_printf("failed\n");
+            goto failed3;
+        }
+        os_printf("OK\n");
+
+        os_printf("set socket keep-alive ");
+        int keepAlive = 1; //enable keepalive
+        int keepIdle = 20; //60s
+        int keepInterval = 2; //5s
+        int keepCount = 3; //retry times
+
+        ret = ret || setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepAlive, sizeof(keepAlive));
+        ret = ret || setsockopt(socket, IPPROTO_TCP, TCP_KEEPIDLE, (void *)&keepIdle, sizeof(keepIdle));
+        ret = ret || setsockopt(socket, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval));
+        ret = ret || setsockopt(socket, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount));
+
+        if (ret) {
+            os_printf("failed! ret = %d\n", ret);
+            goto failed3;
+        }
+
+        os_printf("OK\n");
+
+        lwip_set_non_block(socket);
+
+        os_printf("bind socket ......");
+        memset(&sock_addr, 0, sizeof(sock_addr));
+        sock_addr.sin_family = AF_INET;
+        sock_addr.sin_addr.s_addr = 0;
+        sock_addr.sin_port = 0; // random port
+        ret = bind(socket, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
+        if (ret) {
+            os_printf("failed\n");
+            goto failed4;
+        }
+        os_printf("OK\n");
+
+        os_printf("socket connect to remote ......");
+        memset(&sock_addr, 0, sizeof(sock_addr));
+        sock_addr.sin_family = AF_INET;
+        sock_addr.sin_addr.s_addr = target_ip.addr;
+        sock_addr.sin_port = htons(OPENSSL_DEMO_TARGET_TCP_PORT);
+
+        ret = connect(socket, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
+
+        if (ret == -1) {
+            ret = lwip_net_errno(socket);
+            printf("lwip_net_errno ret: %d \n", ret);
+            /* Codes_SRS_TLSIO_SSL_ESP8266_99_083: [ If connect and getsockopt failed, the tlsio_openssl_open shall return __LINE__. ] */
+            if (ret != 115) { // EINPROGRESS
+                ret = -1;
+                os_printf("failed\n");
                 goto failed5;
             } else {
-                if (!FD_ISSET(socket, &writeset) || FD_ISSET(socket, &errset) ) {
-                    os_printf("socket Error:%d\n", lwip_net_errno(socket));		// socket is in error state[disconnect and so on]
+                FD_ZERO(&readset);
+                FD_ZERO(&writeset);
+                FD_ZERO(&errset);
+
+                FD_SET(socket, &readset);
+                FD_SET(socket, &writeset);
+                FD_SET(socket, &errset);
+
+                ret = select(socket + 1, NULL, &writeset, &errset, NULL);
+                if (ret <= 0) {
+                    os_printf("Error: select return :%d\n", lwip_net_errno(socket)); // select timeout and so on
                     goto failed5;
+                } else {
+                    if (!FD_ISSET(socket, &writeset) || FD_ISSET(socket, &errset) ) {
+                        os_printf("socket Error:%d\n", lwip_net_errno(socket));     // socket is in error state[disconnect and so on]
+                        goto failed5;
+                    }
                 }
             }
         }
-    }
 
 // Socket Connect OK
-    os_printf("Socket Connect OK\n");
+        os_printf("Socket Connect OK\n");
 
-    {
+
         os_printf("create SSL ......");
         ssl = SSL_new(ctx);
         if (!ssl) {
@@ -238,7 +259,7 @@ retry_ssl:
         FD_SET(socket, &errset);
 
         while (retry_connect < MAX_RETRY) {
-        	int ssl_state;
+            int ssl_state;
             ret = lwip_select(socket + 1, &readset, &writeset, &errset, &timeout);
             if (ret == 0) {
                 os_printf("SSL connect timeout\n");
@@ -250,13 +271,13 @@ retry_ssl:
                 os_printf("error return : %d\n", lwip_net_errno(socket));
                 int len = (int) sizeof( int );
                 if (0 != getsockopt (socket, SOL_SOCKET, SO_ERROR, &ret, &len));
-                	os_printf("SSL error ret : %d\n", ret);	// socket is in error state
+                os_printf("SSL error ret : %d\n", ret); // socket is in error state
 
                 goto failed7;
             }
 
-            ret = SSL_connect(ssl);	// would cost some time to parse message
-            if (ret == 1) {	// ssl connect success
+            ret = SSL_connect(ssl); // would cost some time to parse message
+            if (ret == 1) { // ssl connect success
                 break;
             }
 
@@ -267,16 +288,16 @@ retry_ssl:
 
             ssl_state = SSL_get_error(ssl, ret);
             if (ssl_state == SSL_ERROR_WANT_READ) {
-            	FD_SET(socket, &readset);
-            } else if(ssl_state == SSL_ERROR_WANT_WRITE) {
-            	FD_SET(socket, &writeset);
+                FD_SET(socket, &readset);
+            } else if (ssl_state == SSL_ERROR_WANT_WRITE) {
+                FD_SET(socket, &writeset);
             } else {
-            	os_printf("SSL state:%d\n", ssl_state);
-            	goto failed7;
+                os_printf("SSL state:%d\n", ssl_state);
+                goto failed7;
             }
 
             retry_connect = retry_connect + 1;
-            //os_printf("SSL connect retry: %d \n", retry_connect);	// one SSL handshake process maybe need more than one time connect
+            //os_printf("SSL connect retry: %d \n", retry_connect); // one SSL handshake process maybe need more than one time connect
             os_delay_us(RETRY_DELAY);
         }
         //os_printf("total retry_connect: %d ....\n", retry_connect);
@@ -292,7 +313,7 @@ retry_ssl:
         int total_write = 0;
         int need_sent_bytes = send_bytes;
 
-        while (need_sent_bytes > 0 && retry_write < MAX_RETRY_WRITE) {
+        while (need_sent_bytes > 0) {
             FD_ZERO(&writeset);
             FD_SET(socket, &writeset);
             FD_ZERO(&errset);
@@ -314,16 +335,13 @@ retry_ssl:
                 total_write += ret;
                 need_sent_bytes = need_sent_bytes - ret;
             } else {
-                retry_write++;
-                //os_delay_us(100000);//100ms
+                os_printf("ssl write failed! ret = %d\n", ret);
+                goto failed7;
             }
         }
         os_printf("total retry_write: %d and total_write: %d  ....\n", retry_write, total_write);
-        if (retry_write >= MAX_RETRY_WRITE) {
-            os_printf("failed, return [-0x%x]\n", -ret);
-            goto failed8;
-        }
-        os_printf("OK\n");
+
+        os_printf("SSL Write OK\n");
 
 //Start SSL Read
         int total_read = 0;
@@ -359,49 +377,41 @@ retry_ssl:
                 os_printf("get an EOF message\n");
                 break;
             } else {
-                retry_read++;
+                os_printf("ssl read failed!\n");
+                goto failed8;
             }
-        } while (retry_read < MAX_RETRY_WRITE);
+        } while (1);
         os_printf("total retry_read %d and total_read %d bytes data from %s ......\n\n", retry_read, total_read, OPENSSL_DEMO_TARGET_NAME);
-    }
-
 
 failed8:
-    FD_ZERO(&writeset);
-    FD_SET(socket, &writeset);
-    FD_ZERO(&errset);
-    FD_SET(socket, &errset);
+        FD_ZERO(&writeset);
+        FD_SET(socket, &writeset);
+        FD_ZERO(&errset);
+        FD_SET(socket, &errset);
 
-    ret = lwip_select(socket + 1, NULL, &writeset, &errset, &timeout);
-    if (ret > 0 && !FD_ISSET(socket, &errset) && FD_ISSET(socket, &writeset)) {
-        SSL_shutdown(ssl);
-    }
+        ret = lwip_select(socket + 1, NULL, &writeset, &errset, &timeout);
+        if (ret > 0 && !FD_ISSET(socket, &errset) && FD_ISSET(socket, &writeset)) {
+            SSL_shutdown(ssl);
+        }
 
 failed7:
-    os_printf("free SSL ... ...");
-    SSL_free(ssl);
-    os_printf("OK\n");
+        os_printf("free SSL ... ...");
+        SSL_free(ssl);
+        os_printf("OK\n");
 failed6:
 failed5:
 failed4:
-    os_printf("close socket ... ...");
-    close(socket);
-    os_printf("OK\n");
+        os_printf("close socket ... ...");
+        close(socket);
+        os_printf("OK\n");
 failed3:
 failed2:
-    os_printf("free SSL CTX ... ...");
-    SSL_CTX_free(ctx);
-    os_printf("OK\n");
+        os_printf("free SSL CTX ... ...");
+        SSL_CTX_free(ctx);
+        os_printf("OK\n");
 failed1:
-
-    if (test_count <= OPENSSL_DEMO_REQUEST_COUNT) {
-        goto retry_ssl;
+        os_printf("finished\n");
     }
-
-    vTaskDelete(NULL);
-
-    os_printf("task exit\n");
-
     return ;
 }
 
@@ -420,4 +430,3 @@ void user_conn_init(void)
         return ;
     }
 }
-
