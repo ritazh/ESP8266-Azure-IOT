@@ -11,6 +11,7 @@
 #endif /* __cplusplus */
 
 #include "azure_c_shared_utility/agenttime.h"
+#include "azure_c_shared_utility/optimize_size.h"
 
 #ifdef TIZENRT
 #undef LOG_INFO
@@ -65,10 +66,12 @@ The ESP8266 compiler doesn't do a good job compiling this code; it doesn't under
 a 'const char*' and moves it to RAM as a global variable, increasing the .bss size. So we create a
 specific LogInfo that explicitly pins the 'format' on the PROGMEM (flash) using a _localFORMAT variable
 with the macro PSTR.
+
 #define ICACHE_FLASH_ATTR   __attribute__((section(".irom0.text")))
 #define PROGMEM     ICACHE_RODATA_ATTR
 #define PSTR(s) (__extension__({static const char __c[] PROGMEM = (s); &__c[0];}))
 const char* __localFORMAT = PSTR(FORMAT);
+
 On the other hand, vsprintf does not support the pinned 'format' and os_printf does not work with va_list,
 so we compacted the log in the macro LogInfo.
 */
