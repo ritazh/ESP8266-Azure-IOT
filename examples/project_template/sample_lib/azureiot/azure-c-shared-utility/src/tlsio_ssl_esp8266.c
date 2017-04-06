@@ -40,10 +40,10 @@
 #define RECEIVE_BUFFER_SIZE 1024
 #define OPENSSL_SELECT_TIMEOUT 20
 
-// #define malloc os_malloc
-// #define calloc os_calloc
-// #define realloc os_realloc
-// #define free os_free
+#define malloc os_malloc
+#define calloc os_calloc
+#define realloc os_realloc
+#define free os_free
 
 struct timeval timeout = { OPENSSL_SELECT_TIMEOUT, 0 };
 
@@ -172,8 +172,8 @@ static void lwip_set_non_block(int fd)
 
 LOCAL int openssl_thread_LWIP_CONNECTION(TLS_IO_INSTANCE* p)
 {
-    //LogInfo("openssl_thread_LWIP_CONNECTION begin: %d", system_get_free_heap_size());
-    //system_show_malloc();
+    LogInfo("openssl_thread_LWIP_CONNECTION begin: %d", system_get_free_heap_size());
+    system_show_malloc();
 
     int result;
     int ret = 0;
@@ -401,7 +401,7 @@ LOCAL int openssl_thread_LWIP_CONNECTION(TLS_IO_INSTANCE* p)
         
         }
     }
-    //LogInfo("openssl_thread_LWIP_CONNECTION end: %d", system_get_free_heap_size());
+    LogInfo("openssl_thread_LWIP_CONNECTION end: %d", system_get_free_heap_size());
 
     if(result!=0){
         tls_io_instance->tlsio_state = TLSIO_STATE_ERROR;
@@ -443,7 +443,7 @@ static int decode_ssl_received_bytes(TLS_IO_INSTANCE* tls_io_instance)
 static int destroy_openssl_instance(TLS_IO_INSTANCE* tls_io_instance)
 {
     int result = 0;
-    //LogInfo("destroy openssl begin: %d", system_get_free_heap_size());
+    LogInfo("destroy openssl begin: %d", system_get_free_heap_size());
     if (tls_io_instance != NULL)
     {
         if (tls_io_instance->ssl != NULL)
@@ -468,7 +468,7 @@ static int destroy_openssl_instance(TLS_IO_INSTANCE* tls_io_instance)
             LogInfo("SSL_ctx_free");
         }
         
-        //LogInfo("destroy end: %d", system_get_free_heap_size());
+        LogInfo("destroy end: %d", system_get_free_heap_size());
     }
 
     return result;
@@ -479,7 +479,7 @@ static int destroy_openssl_instance(TLS_IO_INSTANCE* tls_io_instance)
 /* Codes_SRS_TLSIO_SSL_ESP8266_99_017: [ The tlsio_openssl_create shall receive the connection configuration (TLSIO_CONFIG). ]*/
 CONCRETE_IO_HANDLE tlsio_openssl_create(void* io_create_parameters)
 {
-    //LogInfo("tlsio_openssl_create begin: %d", system_get_free_heap_size());
+    LogInfo("tlsio_openssl_create begin: %d", system_get_free_heap_size());
     /* Codes_SRS_TLSIO_SSL_ESP8266_99_005: [ The tlsio_ssl_esp8266 shall received the connection information using the TLSIO_CONFIG structure defined in `tlsio.h`. ]*/
     /* Codes_SRS_TLSIO_SSL_ESP8266_99_017: [ The tlsio_openssl_create shall receive the connection configuration (TLSIO_CONFIG). ]*/
     TLSIO_CONFIG* tls_io_config = (TLSIO_CONFIG*)io_create_parameters;
@@ -538,6 +538,7 @@ CONCRETE_IO_HANDLE tlsio_openssl_create(void* io_create_parameters)
 /* Codes_SRS_TLSIO_SSL_ESP8266_99_021: [ The tlsio_openssl_destroy shall destroy a created instance of the tlsio for esp8266 identified by the CONCRETE_IO_HANDLE. ]*/
 void tlsio_openssl_destroy(CONCRETE_IO_HANDLE tls_io)
 {
+    LogInfo("tlsio_openssl_destroy %d", system_get_free_heap_size());
     TLS_IO_INSTANCE* tls_io_instance = (TLS_IO_INSTANCE*)tls_io;
 
     /* Codes_SRS_TLSIO_SSL_ESP8266_99_024: [ If the tlsio_handle is NULL, the tlsio_openssl_destroy shall not do anything. ]*/
@@ -575,13 +576,13 @@ void tlsio_openssl_destroy(CONCRETE_IO_HANDLE tls_io)
         /* Codes_SRS_TLSIO_SSL_ESP8266_99_021: [ The tlsio_openssl_destroy shall destroy a created instance of the tlsio for esp8266 identified by the CONCRETE_IO_HANDLE. ]*/
         free(tls_io_instance);
     }
-    //LogInfo("tlsio_openssl_destroy end: %d", system_get_free_heap_size());
+    LogInfo("tlsio_openssl_destroy end: %d", system_get_free_heap_size());
 }
 
 /* Codes_SRS_TLSIO_SSL_ESP8266_99_026: [ The tlsio_openssl_open shall start the process to open the ssl connection with the host provided in the tlsio_openssl_create. ]*/
 int tlsio_openssl_open(CONCRETE_IO_HANDLE tls_io, ON_IO_OPEN_COMPLETE on_io_open_complete, void* on_io_open_complete_context, ON_BYTES_RECEIVED on_bytes_received, void* on_bytes_received_context, ON_IO_ERROR on_io_error, void* on_io_error_context)
 {
-    //LogInfo("tlsio_openssl_open begin: %d", system_get_free_heap_size());
+    LogInfo("tlsio_openssl_open begin: %d", system_get_free_heap_size());
     int result;
 
     if (tls_io == NULL)
@@ -640,7 +641,7 @@ int tlsio_openssl_open(CONCRETE_IO_HANDLE tls_io, ON_IO_OPEN_COMPLETE on_io_open
                 ret = netconn_gethostbyname(tls_io_instance->hostname, &tls_io_instance->target_ip);
                 /* Codes_SRS_TLSIO_SSL_ESP8266_99_027: [ The tlsio_openssl_open shall set the tlsio to try to open the connection for MAX_RETRY times before assuming that connection failed. ]*/
             } while((ret != 0) && netconn_retry++ < MAX_RETRY);
-            
+
             /* Codes_SRS_TLSIO_SSL_ESP8266_99_019: [ If the WiFi cannot find the IP for the hostName, the tlsio_openssl_open shall return __LINE__. ]*/
             if (ret != 0 || openssl_thread_LWIP_CONNECTION(tls_io_instance) != 0){
                 tls_io_instance->tlsio_state = TLSIO_STATE_ERROR;
@@ -727,7 +728,7 @@ int tlsio_openssl_close(CONCRETE_IO_HANDLE tls_io, ON_IO_CLOSE_COMPLETE on_io_cl
             }
         }
     }
-    //LogInfo("tlsio_openssl_close end: %d", system_get_free_heap_size());
+    LogInfo("tlsio_openssl_close end: %d", system_get_free_heap_size());
     return result;
 }
 /* Codes_SRS_TLSIO_SSL_ESP8266_99_053: [ The tlsio_openssl_send shall send all bytes in a buffer to the ssl connection. ]*/

@@ -13,11 +13,12 @@ extern "C"
 #endif
 
 #include "azure_c_shared_utility/umock_c_prod.h"
-
+#include "c_types.h"
 /* all translation units that need memory measurement need to have GB_MEASURE_MEMORY_FOR_THIS defined */
 /* GB_DEBUG_ALLOC is the switch that turns the measurement on/off, so that it is not on always */
-#if defined(GB_DEBUG_ALLOC)
-
+//#if defined(GB_DEBUG_ALLOC)
+#if 1
+	
 MOCKABLE_FUNCTION(, int, gballoc_init);
 MOCKABLE_FUNCTION(, void, gballoc_deinit);
 MOCKABLE_FUNCTION(, void*, gballoc_malloc, size_t, size);
@@ -28,26 +29,65 @@ MOCKABLE_FUNCTION(, void, gballoc_free, void*, ptr);
 MOCKABLE_FUNCTION(, size_t, gballoc_getMaximumMemoryUsed);
 MOCKABLE_FUNCTION(, size_t, gballoc_getCurrentMemoryUsed);
 
-/* if GB_MEASURE_MEMORY_FOR_THIS is defined then we want to redirect memory allocation functions to gballoc_xxx functions */
-#ifdef GB_MEASURE_MEMORY_FOR_THIS
-/* Unfortunately this is still needed here for things to still compile when using _CRTDBG_MAP_ALLOC.
-That is because there is a rogue component (most likely CppUnitTest) including crtdbg. */
-#if defined(_CRTDBG_MAP_ALLOC) && defined(_DEBUG)
-#undef _malloc_dbg
-#undef _calloc_dbg
-#undef _realloc_dbg
-#undef _free_dbg
-#define _malloc_dbg(size, ...) gballoc_malloc(size)
-#define _calloc_dbg(nmemb, size, ...) gballoc_calloc(nmemb, size)
-#define _realloc_dbg(ptr, size, ...) gballoc_realloc(ptr, size)
-#define _free_dbg(ptr, ...) gballoc_free(ptr)
-#else
-#define malloc gballoc_malloc
-#define calloc gballoc_calloc
-#define realloc gballoc_realloc
-#define free gballoc_free
-#endif
-#endif
+// /* if GB_MEASURE_MEMORY_FOR_THIS is defined then we want to redirect memory allocation functions to gballoc_xxx functions */
+// #ifdef GB_MEASURE_MEMORY_FOR_THIS
+// /* Unfortunately this is still needed here for things to still compile when using _CRTDBG_MAP_ALLOC.
+// That is because there is a rogue component (most likely CppUnitTest) including crtdbg. */
+// #if defined(_CRTDBG_MAP_ALLOC) && defined(_DEBUG)
+// #undef _malloc_dbg
+// #undef _calloc_dbg
+// #undef _realloc_dbg
+// #undef _free_dbg
+// #define _malloc_dbg(size, ...) gballoc_malloc(size)
+// #define _calloc_dbg(nmemb, size, ...) gballoc_calloc(nmemb, size)
+// #define _realloc_dbg(ptr, size, ...) gballoc_realloc(ptr, size)
+// #define _free_dbg(ptr, ...) gballoc_free(ptr)
+// #else
+
+// #define malloc gballoc_malloc
+// #define calloc gballoc_calloc
+// #define realloc gballoc_realloc
+// #define free gballoc_free
+
+void *pvPortMalloc( size_t xWantedSize, const char * file, unsigned line);
+void *pvPortRealloc(void *mem, size_t newsize, const char *file, unsigned line);
+
+#define os_free(s) \
+do{\
+    static const char mem_debug_file[] ICACHE_RODATA_ATTR STORE_ATTR = __FILE__;    \
+    vPortFree(s, mem_debug_file, __LINE__);\
+}while(0)
+
+#define os_malloc(s)    \
+    ({  \
+        static const char mem_debug_file[] ICACHE_RODATA_ATTR STORE_ATTR = __FILE__;    \
+        pvPortMalloc(s, mem_debug_file, __LINE__);  \
+    })
+
+#define os_calloc(p, s)    \
+    ({  \
+        static const char mem_debug_file[] ICACHE_RODATA_ATTR STORE_ATTR = __FILE__;    \
+        pvPortCalloc(p, s, mem_debug_file, __LINE__);  \
+    })
+
+#define os_realloc(p, s)    \
+    ({  \
+        static const char mem_debug_file[] ICACHE_RODATA_ATTR STORE_ATTR = __FILE__;    \
+        pvPortRealloc(p, s, mem_debug_file, __LINE__);  \
+    })
+
+#define os_zalloc(s)    \
+    ({  \
+        static const char mem_debug_file[] ICACHE_RODATA_ATTR STORE_ATTR = __FILE__;    \
+        pvPortZalloc(s, mem_debug_file, __LINE__);  \
+    })
+
+#define malloc os_malloc
+#define calloc os_calloc
+#define realloc os_realloc
+#define free os_free
+// #endif
+// #endif
 
 #else /* GB_DEBUG_ALLOC */
 

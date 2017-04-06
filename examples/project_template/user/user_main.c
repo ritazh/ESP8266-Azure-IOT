@@ -35,12 +35,19 @@
 #include "lwip/apps/sntp.h"
 #include "lwip/apps/sntp_time.h"
 #include "uart.h"
+#include "esp_libc.h"
 
 #define OPENSSL_DEMO_THREAD_NAME "ssl_demo"
 #define OPENSSL_DEMO_THREAD_STACK_WORDS 1024*2
 #define OPENSSL_DEMO_THREAD_PRORIOTY 6
 
- static os_timer_t timer;
+static os_timer_t timer;
+
+bool ICACHE_FLASH_ATTR check_memleak_debug_enable(void)
+{
+    printf("check_memleak_debug_enable called \n");
+    return MEMLEAK_DEBUG_ENABLE;
+}
 
 LOCAL void ICACHE_FLASH_ATTR mqtt_sample()
 {
@@ -94,7 +101,6 @@ LOCAL void ICACHE_FLASH_ATTR configWiFi()
 {
     uint8 ssid[] = {'s','s','i','d'};
     uint8 password[] = {'p','a','s','s','w','o','r','d'}; 
-
 
     struct station_config sta_conf;
     wifi_set_opmode(STATION_MODE);
