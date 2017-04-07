@@ -35,7 +35,7 @@
 #define OPENSSL_FRAGMENT_SIZE 5120
 #define OPENSSL_LOCAL_TCP_PORT 1000
 /* Codes_SSRS_TLSIO_SSL_ESP8266_99_027: [ The tlsio_openssl_open shall set the tlsio to try to open the connection for MAX_RETRY times before assuming that connection failed. ]*/
-#define MAX_RETRY 20000
+#define MAX_RETRY 20
 #define RETRY_DELAY 1000 * 1000 * 10 // 10s
 #define RECEIVE_BUFFER_SIZE 1024
 #define OPENSSL_SELECT_TIMEOUT 20
@@ -166,17 +166,7 @@ static void lwip_set_non_block(int fd)
       }
   }
 
-  while(1){
-      flags = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-      if (flags == -1) {
-          error = lwip_net_errno(fd);
-          if (error != EINTR){
-              break;
-          }
-      } else{
-          break;
-      }
-  }
+  fcntl(fd, F_SETFL, O_NONBLOCK);
 
 }
 
